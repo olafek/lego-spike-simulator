@@ -13,14 +13,17 @@
 
 Without a robot it is hard to test a series of commands.
 
-Children build and program SPIKE Prime robots in the school robotics lab, but the robots stay at school.
-At home they can still open the SPIKE app and write a program – and then nothing happens. They cannot see
-whether "move forward 20 cm" was enough, whether the turn went the right way, or why the mission failed.
-The only way to find out is to wait for the next lab session.
+I built this for my son. He uses SPIKE Prime in the school robotics lab, and at home he was struggling to
+picture what his exercises would actually do: he could write the program in the SPIKE app, but with no real
+robot there was no feedback. Was "move forward 20 cm" enough? Did the turn go the right way? Why did the
+mission fail?
 
-SPIKE Lab closes that gap. A child takes a screenshot of their program on the iPad, uploads it, and a
-simulated robot runs **that exact program** on a measured grid. Then they can change a number and try
-again, right in the browser, as often as they like.
+SPIKE Lab gives him that feedback. He takes a screenshot of his program on the iPad, uploads it, and a
+simulated robot runs **that exact program** on a measured grid. Then he changes a number and tries again,
+right in the browser. It also turned out to be quicker than constantly tinkering with the real machines:
+trying an idea takes seconds.
+
+*– Olaf*
 
 It is built for 10–11 year olds: big buttons, few words, iPad first.
 
@@ -76,6 +79,10 @@ More screens, including the 3D views and the iPad layout: **[the visual tour](do
 Vue 3 + TypeScript + Three.js in the browser, Laravel on the server, SQLite or MySQL.
 The simulator itself is plain TypeScript with no framework, covered by 72 unit tests; 68 server tests and
 25 browser tests (desktop, iPad landscape, iPad portrait) cover the rest.
+
+**Why Laravel?** I have worked with it since version 5 and I like it. It is also a very good fit for
+AI-assisted coding: the framework is opinionated, so there is one obvious place for everything and far less
+to explain or correct.
 
 | Read this | For |
 |---|---|
