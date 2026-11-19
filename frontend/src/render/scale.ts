@@ -142,6 +142,8 @@ export interface Bounds {
 export function fitOrtho(b: Bounds, widthPx: number, heightPx: number, marginPx = 56, minSpanMm = 700): { cx: number; cy: number; pxPerMm: number } {
   const spanX = Math.max(b.maxX - b.minX, minSpanMm)
   const spanY = Math.max(b.maxY - b.minY, minSpanMm)
+  // on a small stage the margin must not eat the whole view
+  marginPx = Math.min(marginPx, 0.12 * Math.min(widthPx, heightPx))
   const w = Math.max(50, widthPx - 2 * marginPx)
   const h = Math.max(50, heightPx - 2 * marginPx)
   const pxPerMm = Math.min(w / spanX, h / spanY)

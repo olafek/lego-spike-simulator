@@ -6,9 +6,12 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "fixture": "node make-fixture.mjs",
-    "install-browsers": "playwright install chromium webkit"
+    "install-browsers": "playwright install chromium webkit",
+    "demo": "node make-demo-gif.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.1"
+    "@playwright/test": "^1.65.1",
+    "gifenc": "^1.0.3",
+    "pngjs": "^7.0.0"
   }
 }

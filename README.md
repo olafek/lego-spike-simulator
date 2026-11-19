@@ -1,8 +1,13 @@
 # SPIKE Lab
 
+[![tests](https://github.com/olafek/lego-spike-simulator/actions/workflows/tests.yml/badge.svg)](https://github.com/olafek/lego-spike-simulator/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Upload a screenshot of your LEGO® SPIKE™ Prime program and watch a robot drive it – no robot needed.**
 
-![The simulator: a robot pushes a seed pod onto its target, with distances in centimetres](docs/screenshots/sim-success.png)
+![A robot drives 20 cm and stops short of the target; the number is changed to 30 and the mission succeeds](docs/screenshots/demo.gif)
+
+*20 cm is not enough. Change one number, press play again, mission complete.*
 
 ## Why this exists
 
@@ -85,6 +90,10 @@ The simulator itself is plain TypeScript with no framework, covered by 72 unit t
 A working first version. The picture reader has been checked against a generated sample and needs more
 practice on real iPad screenshots; only "when program starts" stacks run; the physics is deliberately simple.
 The full list is at the end of [docs/setup.md](docs/setup.md).
+
+## Licence
+
+[MIT](LICENSE) – use it, change it, share it.
 
 ---
 

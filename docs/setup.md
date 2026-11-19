@@ -67,6 +67,8 @@ throw-away password and the offline picture reader. They never touch real data a
 reader once (one paid AI request) and prints what came back.
 
 `npm run fixture` in `tests/` redraws the sample screenshot from `fixtures/sample-program.html`.
+`npm run demo` re-records the animated demo at the top of the README, and `node make-social-preview.mjs`
+redraws `docs/social-preview.png`.
 
 ## Putting it on a server
 
