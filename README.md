@@ -23,6 +23,11 @@ simulated robot runs **that exact program** on a measured grid. Then he changes 
 right in the browser. It also turned out to be quicker than constantly tinkering with the real machines:
 trying an idea takes seconds.
 
+I did not even check whether something similar already existed. I was frustrated trying to work out how to
+help him, and decided to build it in one go. So if you have the same problem, take it: install it on your
+own website and run it there. All you need to bring is your own AI model (OpenAI, Gemini, or anything that
+speaks the OpenAI format) – see [docs/setup.md](docs/setup.md).
+
 *– Olaf*
 
 It is built for 10–11 year olds: big buttons, few words, iPad first.
