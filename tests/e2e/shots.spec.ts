@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
-import { login, openSample, playToEnd } from './helpers'
+import { amountInput, login, openSample, playToEnd } from './helpers'
 
 // Visual record of every main screen (tests/test-results/shots). Not an assertion-heavy test:
 // it exists so a human can look at the real pages after a run.
@@ -40,6 +40,20 @@ test('capture the main screens', async ({ page }, info) => {
   await page.getByTestId('camera-behind').click()
   await page.waitForTimeout(800)
   await shot('9-sim-behind')
+
+  // the fix: 20 cm -> 30 cm, mission complete
+  await page.getByTestId('camera-top').click()
+  await amountInput(page).fill('30')
+  await amountInput(page).press('Enter')
+  await playToEnd(page)
+  await page.waitForTimeout(700)
+  await shot('11-sim-success')
+
+  await page.goto('/')
+  await openSample(page, 'square')
+  await playToEnd(page)
+  await page.waitForTimeout(400)
+  await shot('12-square-top')
 
   await page.goto('/')
   await openSample(page, 'arm')

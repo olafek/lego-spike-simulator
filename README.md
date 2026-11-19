@@ -1,109 +1,92 @@
 # SPIKE Lab
 
-Screenshot-first LEGO® Education SPIKE™ Prime simulator for 10–11 year olds.
-A child screenshots their program in the SPIKE app, uploads it, checks the reconstructed blocks, and
-watches a robot drive **that exact program** on a metric grid – then changes numbers and reruns, without
-going back to the iPad app.
+**Upload a screenshot of your LEGO® SPIKE™ Prime program and watch a robot drive it – no robot needed.**
 
-The motion is deterministic maths (fixed timestep, differential drive). AI only *reads the screenshot*
-and can *explain a block* or *suggest a mat*; it never moves the robot and never edits the program.
+![The simulator: a robot pushes a seed pod onto its target, with distances in centimetres](docs/screenshots/sim-success.png)
 
-| Folder | What |
+## Why this exists
+
+Without a robot it is hard to test a series of commands.
+
+Children build and program SPIKE Prime robots in the school robotics lab, but the robots stay at school.
+At home they can still open the SPIKE app and write a program – and then nothing happens. They cannot see
+whether "move forward 20 cm" was enough, whether the turn went the right way, or why the mission failed.
+The only way to find out is to wait for the next lab session.
+
+SPIKE Lab closes that gap. A child takes a screenshot of their program on the iPad, uploads it, and a
+simulated robot runs **that exact program** on a measured grid. Then they can change a number and try
+again, right in the browser, as often as they like.
+
+It is built for 10–11 year olds: big buttons, few words, iPad first.
+
+## How it works
+
+| 1. Upload a screenshot | 2. Check the blocks |
 |---|---|
-| `frontend/` | Vue 3 + TypeScript + Vite + Tailwind + Pinia + Three.js. `src/core` is the framework-free simulator. |
-| `backend/` | Laravel (PHP 8.3), SQLite locally / MySQL compatible. Password gate, projects, private screenshots, quotas, AI adapters. |
-| `tests/` | Playwright end-to-end tests (real backend + real frontend, mock picture reader). |
-| `fixtures/` | Sample screenshot (`sample-program.png`) and its HTML source. |
-| `docs/` | [architecture](docs/architecture.md), [robots & physics assumptions](docs/robots.md), original brief (`prompt.md`). |
+| ![Home screen with a large upload button and sample exercises](docs/screenshots/home.png) | ![The screenshot side by side with the reconstructed, editable blocks](docs/screenshots/check.png) |
+| One big button. Samples below for a first try. | The picture sits next to the blocks that were read from it. Anything unreadable gets a 🚩 and is **never guessed** – here a smudged motor port. |
 
-## Run it locally (no Docker)
-
-Needs PHP 8.3+ with Composer and Node 20+.
-
-```powershell
-# 1. backend  → http://127.0.0.1:8000
-cd backend
-composer install
-copy .env.example .env          # set LAB_ACCESS_PASSWORD (there is no default password)
-php artisan key:generate
-php artisan migrate
-php artisan serve
-
-# 2. frontend → http://localhost:5173  (proxies /api to the backend)
-cd frontend
-npm install
-npm run dev
-```
-
-Open http://localhost:5173 and enter the lab password.
-With `VISION_DRIVER=mock` (the `.env.example` default) every upload returns a stored example reading, clearly
-labelled "practice mode" – the whole flow works with no AI service at all.
-
-### Environment (`backend/.env`)
-
-| Variable | Meaning |
+| 3. Pick the robot | 4. Set up the mat (optional) |
 |---|---|
-| `LAB_ACCESS_PASSWORD` | The one shared lab password. Empty = nobody can log in. |
-| `LAB_SESSION_HOURS` | Session lifetime (default 8). |
-| `LAB_MAX_AI_REQUESTS_PER_HOUR` | AI calls per session per hour (per IP: ×6, a classroom shares an IP). |
-| `LAB_MAX_UPLOAD_MB`, `LAB_MAX_SCREENSHOTS_PER_PROJECT`, `LAB_MAX_IMAGE_DIMENSION` | Upload caps. |
-| `LAB_MAX_CONCURRENT_ANALYSES`, `LAB_MAX_UPLOADS_PER_HOUR`, `LAB_MAX_PROJECTS_PER_SESSION_PER_HOUR` | Abuse limits. |
-| `LAB_LOGIN_MAX_ATTEMPTS`, `LAB_LOGIN_COOLDOWN_SECONDS` | Bad-password throttling. |
-| `LAB_RETENTION_DAYS` | Projects and screenshots untouched this long are deleted by `php artisan lab:prune` (scheduled daily). |
-| `VISION_DRIVER` | `mock` or `openai` – who reads the screenshots. |
-| `OPENAI_API_KEY`, `OPENAI_MODEL` | Used when `VISION_DRIVER=openai`. The model must accept images. |
-| `AIBRAIN_BASE_URL`, `AIBRAIN_API_KEY`, `AIBRAIN_TIMEOUT` | AI Brain gateway (text only): block explanations and mat suggestions. Optional. |
+| ![Choosing between Driving Base 1, 2, 3 and the Advanced Driving Base](docs/screenshots/robot.png) | ![A top-down mat editor with a seed pod and a target circle on a 10 cm grid](docs/screenshots/mat.png) |
+| The program hints at the robot; the child confirms. Add a fork, lift arm, grabber or sensors. | Drop seed pods, crates, walls, lines and targets onto a 10 cm grid, or pick a ready-made mission. |
 
-## Tests
-
-```powershell
-cd frontend; npm test            # 72 simulator/unit tests (Vitest)
-cd backend;  php artisan test    # 65 API/security tests (PHPUnit)
-cd tests;    npm install; npx playwright install chromium; npm test   # 25 browser tests
-```
-
-The Playwright run starts its own backend (separate `e2e.sqlite`, throw-away password, mock picture reader)
-and frontend on ports 8010/5183, so it never touches your data or spends AI credits.
-`node tests/live-recognition-check.mjs` sends the sample screenshot through the **real** configured
-picture reader once (costs one AI request) and prints what came back.
-
-## Production
-
-```powershell
-cd frontend; npm ci; npm run build        # writes backend/public/spa
-cd backend;  composer install --no-dev --optimize-autoloader
-php artisan migrate --force; php artisan config:cache; php artisan route:cache
-```
-
-- Serve `backend/public` with PHP-FPM behind **HTTPS** (required: the session cookie is `Secure` in production).
-- `APP_ENV=production`, `APP_DEBUG=false`, a strong `LAB_ACCESS_PASSWORD`, `SESSION_SECURE_COOKIE=true`.
-- Behind a proxy/load balancer configure trusted proxies, otherwise login throttling and IP quotas see the proxy's address.
-- Run the scheduler (`php artisan schedule:run` every minute) so `lab:prune` enforces retention.
-- `storage/app/private` holds the screenshots; it must not be web-accessible (it is outside `public/`).
-- Cap request size at the web server (e.g. 12 MB) in addition to the app limits.
-
-**What the password is and is not.** One shared password keeps the public out. It does not identify a child and
-does not isolate projects: anyone with the password can list and open every lab project. The UI says so.
-
-## Status – what really works
-
-Verified by the automated tests above, plus one live OpenAI recognition of the sample screenshot.
-
-| Milestone | State |
+| 5. Run it | 6. Change a number, run again |
 |---|---|
-| 1. Gate, protected API, upload → review → edit → save | **Done.** |
-| 2. 3D Driving Base, metric grid, cameras, playback/step/rewind, trail | **Done.** |
-| 3. Real vision adapter, strict validation, multi-screenshot | **Done** with OpenAI. Verified live on the generated sample image only – **not yet on a real iPad SPIKE screenshot**. |
-| 4. Driving Base 2/3/Advanced, attachments, port mapping | **Done** as data-driven configs; geometry beyond the official port/wheel facts is approximate (see `docs/robots.md`). |
-| 5. Scene editor, seed pods, pushing, lifting, goals | **Done with documented simplifications** (objects slide but do not rotate or tip; lifting/grabbing is rule-based). |
-| 6. Sensors, control flow, parallel stacks, calibration, export/import, iPad layouts | **Done.** |
+| ![The robot stopped short of the target: mission not complete yet](docs/screenshots/sim-not-yet.png) | ![After changing 20 cm to 30 cm the seed pod is on the target](docs/screenshots/sim-success.png) |
+| 20 cm was not far enough. The readouts say exactly how far the robot went and where it ended. | Edit the block, the robot reruns at once. The original screenshot is kept untouched. |
 
-Known gaps / next steps:
+More screens, including the 3D views and the iPad layout: **[the visual tour](docs/tour.md)**.
 
-- Try real SPIKE app screenshots (light/dark theme, zoomed, multi-screenshot programs) and tune `backend/resources/lab/vision-prompt.txt`.
-- Only "when program starts" stacks run; other event hats are shown and flagged, not simulated.
-- Conditions with and/or/not are executed correctly but can only be replaced, not edited part by part.
-- No custom Rapier physics: collision is a small 2D solver (enough for pushing; no tipping, stacking or friction model).
-- HEIC upload depends on the server's Imagick codec and is untested; iPads normally hand over JPEG/PNG.
-- Browser tests use Chromium with iPad viewports + touch; run them in WebKit/on a real iPad before a classroom rollout.
-- The 3D camera feel and touch gestures were checked through screenshots and automated taps, not by hand on a device.
+## What it can do
+
+- **Reads real programs.** Movement, single motors, waits, loops, if/else, sensor conditions, variables,
+  and several stacks running at the same time.
+- **Measures like the lab floor.** A true-to-scale grid in centimetres (inches optional), a scale bar, and
+  live readouts: *Moved 30 cm · Turned 90° · Position x 0 cm, y 30 cm*.
+- **Step by step.** Play, pause, next instruction, previous instruction, a timeline, and speeds from ¼× to 4×.
+  Stepping back restores everything – robot, tools, objects and variables.
+- **Four robots.** Driving Base 1, 2 and 3 and the Advanced Driving Base, each with its own wheels and ports.
+- **Tools and sensors.** Forks that only push, a lift arm and a grabber that follow their motor, colour,
+  distance and force sensors.
+- **Five cameras.** From above, free 3D, follow, behind and side.
+- **Missions.** A goal such as "get the big seed pod onto the circle" is checked from the simulated result.
+
+![A square route seen from above: four 20 cm sides and four 90 degree turns](docs/screenshots/square.png)
+
+## What it is honest about
+
+- **The movement is maths, not AI.** AI only reads the screenshot (and can explain a block in simple words).
+  The robot's path is calculated with a fixed-step simulation, so the same program always gives the same result.
+- **Nothing is invented.** A value the reader could not make out stays empty and blocks the run until the
+  child fills it in. Blocks SPIKE Lab cannot run yet are shown, flagged and skipped.
+- **Approximations are labelled.** Ports, wheel size and motor speeds come from official LEGO documents where
+  they exist; everything else (track width, tool sizes, how objects slide) is an estimate, marked "≈" in the app
+  and listed in [docs/robots.md](docs/robots.md). Pushing and lifting are simplified: things slide but do not tip.
+- **One shared password is not privacy.** It keeps strangers out; it does not separate one child's projects
+  from another's. The app says so.
+
+## Under the hood
+
+Vue 3 + TypeScript + Three.js in the browser, Laravel on the server, SQLite or MySQL.
+The simulator itself is plain TypeScript with no framework, covered by 72 unit tests; 65 server tests and
+25 browser tests (desktop, iPad landscape, iPad portrait) cover the rest.
+
+| Read this | For |
+|---|---|
+| [docs/tour.md](docs/tour.md) | Every screen, with pictures |
+| [docs/setup.md](docs/setup.md) | Running it locally, settings, tests, putting it on a server |
+| [docs/architecture.md](docs/architecture.md) | How the simulator, the program format and the AI adapters fit together |
+| [docs/robots.md](docs/robots.md) | Robot data: what is verified, what is estimated, and the sources |
+| [docs/prompt.md](docs/prompt.md) | The original brief this was built from |
+
+## Status
+
+A working first version. The picture reader has been checked against a generated sample and needs more
+practice on real iPad screenshots; only "when program starts" stacks run; the physics is deliberately simple.
+The full list is at the end of [docs/setup.md](docs/setup.md).
+
+---
+
+LEGO®, SPIKE™ and the Minifigure are trademarks of the LEGO Group, which does not sponsor, authorise or
+endorse this project. SPIKE Lab is an independent learning tool.
