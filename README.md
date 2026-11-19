@@ -69,7 +69,7 @@ More screens, including the 3D views and the iPad layout: **[the visual tour](do
 ## Under the hood
 
 Vue 3 + TypeScript + Three.js in the browser, Laravel on the server, SQLite or MySQL.
-The simulator itself is plain TypeScript with no framework, covered by 72 unit tests; 65 server tests and
+The simulator itself is plain TypeScript with no framework, covered by 72 unit tests; 68 server tests and
 25 browser tests (desktop, iPad landscape, iPad portrait) cover the rest.
 
 | Read this | For |

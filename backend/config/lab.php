@@ -32,22 +32,22 @@ return [
 
     'retention_days' => max(1, (int) env('LAB_RETENTION_DAYS', 30)),
 
-    // Screenshot recognition. AI Brain is text-only, so vision uses its own driver.
-    'vision' => [
-        'driver' => strtolower((string) env('VISION_DRIVER', 'mock')), // mock | openai
-        'timeout' => max(5, (int) env('VISION_TIMEOUT', 90)),
+    // One AI provider does every AI job: reading screenshots, explaining a block, proposing a mat.
+    // mock = offline stored example (text helpers off) | openai | gemini
+    // VISION_DRIVER / VISION_TIMEOUT are still read so older .env files keep working.
+    'ai' => [
+        'provider' => strtolower((string) env('AI_PROVIDER', env('VISION_DRIVER', 'mock'))),
+        'timeout' => max(5, (int) env('AI_TIMEOUT', env('VISION_TIMEOUT', 90))),
         'openai' => [
             'key' => (string) env('OPENAI_API_KEY', ''),
             'model' => (string) env('OPENAI_MODEL', ''),
+            // any service that speaks the OpenAI chat-completions format
             'base_url' => rtrim((string) env('OPENAI_BASE_URL', 'https://api.openai.com/v1'), '/'),
         ],
-    ],
-
-    // AI Brain gateway (text only): explanations and mission-scene proposals.
-    'aibrain' => [
-        'base_url' => (string) env('AIBRAIN_BASE_URL', ''),
-        'key' => (string) env('AIBRAIN_API_KEY', ''),
-        'model' => (string) env('AIBRAIN_MODEL', ''), // informational; the gateway picks the model from the token
-        'timeout' => max(5, (int) env('AIBRAIN_TIMEOUT', 60)),
+        'gemini' => [
+            'key' => (string) env('GEMINI_API_KEY', ''),
+            'model' => (string) env('GEMINI_MODEL', ''),
+            'base_url' => rtrim((string) env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'), '/'),
+        ],
     ],
 ];

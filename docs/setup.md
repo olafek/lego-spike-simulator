@@ -32,7 +32,7 @@ npm run dev
 
 Open http://localhost:5173 and enter the lab password.
 
-With `VISION_DRIVER=mock` (the default in `.env.example`) every upload returns a stored example reading,
+With `AI_PROVIDER=mock` (the default in `.env.example`) every upload returns a stored example reading,
 labelled "practice mode" in the app. The whole flow works with no AI service at all.
 
 ## Settings (`backend/.env`)
@@ -46,15 +46,17 @@ labelled "practice mode" in the app. The whole flow works with no AI service at 
 | `LAB_MAX_CONCURRENT_ANALYSES`, `LAB_MAX_UPLOADS_PER_HOUR`, `LAB_MAX_PROJECTS_PER_SESSION_PER_HOUR` | Limits against misuse. |
 | `LAB_LOGIN_MAX_ATTEMPTS`, `LAB_LOGIN_COOLDOWN_SECONDS` | Wrong-password throttling. |
 | `LAB_RETENTION_DAYS` | Projects and screenshots untouched for this long are deleted by `php artisan lab:prune`. |
-| `VISION_DRIVER` | `mock` or `openai` – who reads the screenshots. |
-| `OPENAI_API_KEY`, `OPENAI_MODEL` | Used when `VISION_DRIVER=openai`. The model must accept images. |
-| `AIBRAIN_BASE_URL`, `AIBRAIN_API_KEY`, `AIBRAIN_TIMEOUT` | Optional text-only AI gateway for "explain this block" and "suggest a mat". Any service with the contract in [architecture.md](architecture.md) works. |
+| `AI_PROVIDER` | `mock`, `openai` or `gemini`. One provider reads the screenshots, explains blocks and suggests mats. |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` | Used when `AI_PROVIDER=openai`. The model must accept images. |
+| `OPENAI_BASE_URL` | Optional. Point it at any other service that speaks the OpenAI chat-completions format. |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | Used when `AI_PROVIDER=gemini`. The model must accept images. |
+| `AI_TIMEOUT` | Seconds to wait for the AI service (default 90). |
 
 ## Tests
 
 ```bash
 cd frontend && npm test            # 72 simulator and unit tests (Vitest)
-cd backend  && php artisan test    # 65 API and security tests (PHPUnit)
+cd backend  && php artisan test    # 68 API and security tests (PHPUnit)
 cd tests    && npm install && npx playwright install chromium && npm test   # 25 browser tests
 ```
 
@@ -84,7 +86,7 @@ php artisan config:cache
 ```
 
 In `.env` for production: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://your-domain`,
-`SESSION_SECURE_COOKIE=true`, a strong `LAB_ACCESS_PASSWORD`, and the AI settings.
+`SESSION_SECURE_COOKIE=true`, a strong `LAB_ACCESS_PASSWORD`, and the AI provider settings.
 
 - The web root must be `backend/public`, served over **HTTPS** (the login cookie is HTTPS-only in production).
 - Run the scheduler every minute so old projects are cleaned up:

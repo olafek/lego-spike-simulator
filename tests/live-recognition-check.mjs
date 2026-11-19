@@ -1,4 +1,5 @@
-// Manual check of the REAL picture reader (costs one AI request). Not part of the test suite.
+// Manual check of the REAL AI provider: reads the sample screenshot and explains one block
+// (two paid AI requests). Not part of the test suite.
 // Usage: start the backend (cd backend && php artisan serve), then: node live-recognition-check.mjs [image]
 // Reads the lab password from backend/.env and never prints it.
 import { readFileSync } from 'node:fs'
@@ -45,3 +46,7 @@ const rec = await call('POST', `/api/projects/${project.json.id}/recognise`, {})
 console.log('recognise:', rec.status, `${((Date.now() - started) / 1000).toFixed(1)} s`, 'driver:', rec.json.driver, 'model:', rec.json.model)
 console.log(JSON.stringify(rec.json.raw ?? rec.json, null, 1))
 await call('DELETE', `/api/projects/${project.json.id}`)
+
+// the same provider also answers the text helper (one more AI request)
+const explain = await call('POST', '/api/ai/explain', { blockText: 'move forward for 20 cm', programText: 'when program starts\n  move forward for 20 cm' })
+console.log('explain:', explain.status, JSON.stringify(explain.json))

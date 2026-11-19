@@ -23,9 +23,7 @@ const backendEnv = {
   LAB_MAX_AI_REQUESTS_PER_HOUR: '500',
   LAB_MAX_UPLOADS_PER_HOUR: '2000',
   LAB_MAX_PROJECTS_PER_SESSION_PER_HOUR: '2000',
-  VISION_DRIVER: 'mock',
-  AIBRAIN_BASE_URL: '',
-  AIBRAIN_API_KEY: '',
+  AI_PROVIDER: 'mock',
 }
 
 const tablet = { ...devices['Desktop Chrome'], hasTouch: true, isMobile: false, deviceScaleFactor: 2 }

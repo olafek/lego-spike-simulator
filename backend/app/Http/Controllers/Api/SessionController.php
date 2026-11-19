@@ -5,9 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Exceptions\LabException;
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\LabAuth;
-use App\Services\AiBrain\AiBrainClient;
+use App\Services\Ai\AiProvider;
 use App\Services\UsageLimiter;
-use App\Services\Vision\VisionRecogniser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -15,7 +14,7 @@ use Illuminate\Support\Facades\RateLimiter;
 class SessionController extends Controller
 {
     /** Public. Also makes sure the browser holds an XSRF-TOKEN cookie (set by the web middleware). */
-    public function show(Request $request, UsageLimiter $usage, VisionRecogniser $vision, AiBrainClient $brain): JsonResponse
+    public function show(Request $request, UsageLimiter $usage, AiProvider $ai): JsonResponse
     {
         $authenticated = LabAuth::check($request);
         $request->session()->token(); // ensure a CSRF token exists
@@ -29,8 +28,8 @@ class SessionController extends Controller
                 'maxAiRequestsPerHour' => config('lab.limits.ai_requests_per_hour'),
                 'aiRemaining' => $authenticated ? $usage->remaining($request, 'ai') : 0,
             ],
-            'vision' => ['driver' => $vision->driver(), 'live' => $vision->live()],
-            'assistant' => ['available' => $brain->configured()],
+            'vision' => ['driver' => $ai->driver(), 'live' => $ai->live()],
+            'assistant' => ['available' => $ai->live()],
         ]);
     }
 
@@ -85,7 +84,7 @@ class SessionController extends Controller
         return response()->json(['authenticated' => false]);
     }
 
-    public function usage(Request $request, UsageLimiter $usage, VisionRecogniser $vision, AiBrainClient $brain): JsonResponse
+    public function usage(Request $request, UsageLimiter $usage, AiProvider $ai): JsonResponse
     {
         return response()->json([
             'usage' => $usage->snapshot($request),
@@ -100,8 +99,8 @@ class SessionController extends Controller
                 'retentionDays' => config('lab.retention_days'),
                 'sessionHours' => config('lab.session_hours'),
             ],
-            'vision' => ['driver' => $vision->driver(), 'model' => $vision->model(), 'live' => $vision->live()],
-            'assistant' => ['available' => $brain->configured()],
+            'vision' => ['driver' => $ai->driver(), 'model' => $ai->model(), 'live' => $ai->live()],
+            'assistant' => ['available' => $ai->live()],
         ]);
     }
 

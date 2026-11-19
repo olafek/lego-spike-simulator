@@ -8,8 +8,8 @@ iPad / browser ── Vue SPA ────────────────�
   render/ ← Three.js, displays a Frame, never computes motion          ├─ LabAuth middleware (shared password session)
                                                                        ├─ projects + private screenshots (SQLite/MySQL)
                                                                        ├─ UsageLimiter (quotas, concurrency)
-                                                                       ├─ VisionRecogniser  → mock | OpenAI   (images)
-                                                                       └─ AiBrainClient     → AI Brain gateway (text)
+                                                                       └─ AiProvider → mock | OpenAI | Gemini
+                                                                          (reads screenshots, explains blocks, suggests mats)
 ```
 
 ## The simulator (`frontend/src/core`)
@@ -74,22 +74,29 @@ one point; distance sensor = one forward ray (5–200 cm); force sensor = presse
 1. Screenshots are stored privately (`storage/app/private`, re-encoded, EXIF stripped) and served only through
    the authenticated `/api/projects/{id}/screenshots/{sid}/image` route.
 2. `POST /api/projects/{id}/recognise` sends them, in order, with `backend/resources/lab/vision-prompt.txt`
-   to the configured `VisionRecogniser` and returns the decoded JSON as `raw`.
+   to the configured `AiProvider` and returns the decoded JSON as `raw`.
 3. The frontend validates `raw` with `normaliseRecognition()`: wrong overall shape → error, nothing changes;
    unknown block → "not supported" block; unreadable or out-of-range value → `null`/flag listed in `uncertain`.
    Nothing is guessed. The validated result is saved twice: `original` (never edited) and `program` (the child's copy).
 
-### Adapter contracts
+### The AI provider
 
-`App\Services\Vision\VisionRecogniser::recognise(array $images, string $prompt): array`
-- `mock` – returns `resources/lab/mock-extraction.json`.
-- `openai` – `POST {OPENAI_BASE_URL}/chat/completions`, one user message with the prompt text and each image
-  as a `data:` URL, JSON response format. Verified live.
+One interface, `App\Services\Ai\AiProvider`, is the only place the app talks to an AI service:
 
-`App\Services\AiBrain\AiBrainClient` (text only; verified against the gateway source and a live call):
-`POST {AIBRAIN_BASE_URL}generate`, multipart fields `token`, `system`, `user`, optional `assistant`,
-`temperature` → `200 {"response": "<text>"}` or `{"error": "…"}` (400/401; the gateway is IP-whitelisted).
-AI Brain does not accept images, which is why vision has its own driver.
+- `recognise(array $images, string $prompt): array` – read screenshots, return the decoded JSON.
+- `text(string $system, string $user): string` – explain a block or suggest a mat.
+
+`AI_PROVIDER` chooses the implementation, and that one provider does all three jobs:
+
+| Provider | How it is called | Checked |
+|---|---|---|
+| `mock` | Returns `resources/lab/mock-extraction.json`; text helpers are switched off. | Automated tests |
+| `openai` | `POST {OPENAI_BASE_URL}/chat/completions`; each image as a `data:` URL; JSON response format for screenshots. No temperature is sent. | Automated tests and a live call |
+| `gemini` | `POST {GEMINI_BASE_URL}/models/{model}:generateContent`; images as `inline_data`; key in the `x-goog-api-key` header. | Automated tests with faked responses only – not yet tried against the real service |
+
+`OPENAI_BASE_URL` can point at any service that speaks the OpenAI chat-completions format, which covers
+many other hosted and local models. To add a different kind of provider, implement `AiProvider` and add one
+line to the `match` in `AppServiceProvider`.
 
 ## API summary
 

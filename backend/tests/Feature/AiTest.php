@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Exceptions\LabException;
-use App\Services\AiBrain\AiBrainClient;
-use App\Services\Vision\VisionRecogniser;
+use App\Services\Ai\AiProvider;
+use App\Services\Ai\GeminiProvider;
+use App\Services\Ai\OpenAiProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Cache;
@@ -31,7 +31,7 @@ class AiTest extends TestCase
 
     private function useOpenAi(): void
     {
-        config(['lab.vision.driver' => 'openai', 'lab.vision.openai.key' => 'sk-test-key', 'lab.vision.openai.model' => 'vision-model-x']);
+        config(['lab.ai.provider' => 'openai', 'lab.ai.openai.key' => 'sk-test-key', 'lab.ai.openai.model' => 'vision-model-x']);
     }
 
     private function openAiAnswer(string $content): array
@@ -39,9 +39,14 @@ class AiTest extends TestCase
         return ['choices' => [['message' => ['role' => 'assistant', 'content' => $content], 'finish_reason' => 'stop']]];
     }
 
-    private function useBrain(): void
+    private function useGemini(): void
     {
-        config(['lab.aibrain.base_url' => 'https://brain.test/api/', 'lab.aibrain.key' => 'brain-token']);
+        config(['lab.ai.provider' => 'gemini', 'lab.ai.gemini.key' => 'g-test-key', 'lab.ai.gemini.model' => 'gem-model-x']);
+    }
+
+    private function geminiAnswer(string ...$parts): array
+    {
+        return ['candidates' => [['content' => ['role' => 'model', 'parts' => array_map(fn ($t) => ['text' => $t], $parts)], 'finishReason' => 'STOP']]];
     }
 
     // ---- recognition: mock driver -------------------------------------------------
@@ -185,13 +190,13 @@ class AiTest extends TestCase
 
     public function test_openai_without_key_or_model_is_not_configured_and_never_falls_back_to_mock(): void
     {
-        config(['lab.vision.driver' => 'openai', 'lab.vision.openai.key' => '', 'lab.vision.openai.model' => 'm']);
+        config(['lab.ai.provider' => 'openai', 'lab.ai.openai.key' => '', 'lab.ai.openai.model' => 'm']);
         Http::fake();
         $id = $this->projectWithScreenshot();
 
         $this->postJson("/api/projects/{$id}/recognise")->assertStatus(503)->assertJson(['code' => 'ai_not_configured']);
 
-        config(['lab.vision.openai.key' => 'k', 'lab.vision.openai.model' => '']);
+        config(['lab.ai.openai.key' => 'k', 'lab.ai.openai.model' => '']);
         $this->postJson("/api/projects/{$id}/recognise")->assertStatus(503)->assertJson(['code' => 'ai_not_configured']);
 
         Http::assertNothingSent();
@@ -201,7 +206,7 @@ class AiTest extends TestCase
 
     public function test_unknown_driver_is_not_configured(): void
     {
-        config(['lab.vision.driver' => 'banana']);
+        config(['lab.ai.provider' => 'banana']);
         $id = $this->projectWithScreenshot();
 
         $this->postJson("/api/projects/{$id}/recognise")->assertStatus(503)->assertJson(['code' => 'ai_not_configured']);
@@ -213,53 +218,74 @@ class AiTest extends TestCase
 
         $this->useOpenAi();
         $this->getJson('/api/session')->assertJsonPath('vision.driver', 'openai')->assertJsonPath('vision.live', true);
-        $this->assertInstanceOf(VisionRecogniser::class, app(VisionRecogniser::class));
+        $this->assertInstanceOf(OpenAiProvider::class, app(AiProvider::class));
+
+        $this->useGemini();
+        $this->getJson('/api/session')->assertJsonPath('vision.driver', 'gemini')->assertJsonPath('vision.live', true);
+        $this->assertInstanceOf(GeminiProvider::class, app(AiProvider::class));
     }
 
-    // ---- AI Brain (text only, always faked) ---------------------------------------
+    // ---- recognition: Gemini driver (always faked) --------------------------------
 
-    public function test_aibrain_client_posts_the_multipart_contract_and_reads_response(): void
+    public function test_gemini_driver_sends_prompt_and_images_and_parses_the_json(): void
     {
-        $this->useBrain();
-        Http::fake(['brain.test/*' => Http::response(['response' => '  Hello there.  '])]);
+        $this->useGemini();
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response($this->geminiAnswer('{"stacks":[{"hat":null,', '"blocks":[]}],"notes":["ok"]}'))]);
 
-        $text = app(AiBrainClient::class)->generate('SYS', 'USER', 'CTX', 0.5);
+        $id = $this->postJson('/api/projects')->json('id');
+        $this->post("/api/projects/{$id}/screenshots", ['image' => $this->pngUpload(40, 40)])->assertCreated();
+        $this->post("/api/projects/{$id}/screenshots", ['image' => $this->pngUpload(60, 60)])->assertCreated();
 
-        $this->assertSame('Hello there.', $text);
+        $this->postJson("/api/projects/{$id}/recognise")
+            ->assertOk()
+            ->assertJsonPath('driver', 'gemini')
+            ->assertJsonPath('model', 'gem-model-x')
+            ->assertJsonPath('raw.notes.0', 'ok') // the answer arrived in two parts and was joined
+            ->assertJsonCount(2, 'screenshotIds');
 
         Http::assertSent(function (HttpRequest $request) {
-            $fields = collect($request->data())->pluck('contents', 'name');
+            $body = $request->data();
+            $parts = $body['contents'][0]['parts'];
+            $images = array_values(array_filter($parts, fn ($p) => isset($p['inline_data'])));
 
-            return $request->url() === 'https://brain.test/api/generate'
-                && $request->method() === 'POST'
-                && $request->isMultipart()
-                && $fields['token'] === 'brain-token'
-                && $fields['system'] === 'SYS'
-                && $fields['user'] === 'USER'
-                && $fields['assistant'] === 'CTX'
-                && $fields['temperature'] === '0.5';
+            return $request->url() === 'https://generativelanguage.googleapis.com/v1beta/models/gem-model-x:generateContent'
+                && $request->hasHeader('x-goog-api-key', 'g-test-key')
+                && ! str_contains($request->url(), 'g-test-key') // the key is never put in the URL
+                && str_contains($body['system_instruction']['parts'][0]['text'], 'NEVER GUESS')
+                && $body['generationConfig']['responseMimeType'] === 'application/json'
+                && count($images) === 2
+                && $images[0]['inline_data']['mime_type'] === 'image/png'
+                && getimagesizefromstring(base64_decode($images[0]['inline_data']['data']))[0] === 40;
         });
     }
 
-    public function test_aibrain_error_bodies_become_ai_unavailable(): void
+    public function test_gemini_errors_blocked_answers_and_missing_settings(): void
     {
-        $this->useBrain();
-        Http::fake(['*' => Http::response(['error' => 'Unauthorized IP'], 401)]);
+        $id = $this->projectWithScreenshot();
 
-        try {
-            app(AiBrainClient::class)->generate('s', 'u');
-            $this->fail('expected a LabException');
-        } catch (LabException $e) {
-            $this->assertSame('ai_unavailable', $e->errorCode);
-            $this->assertSame(502, $e->status);
-            $this->assertStringNotContainsString('Unauthorized IP', $e->getMessage());
-        }
+        $this->useGemini();
+        Http::fakeSequence()
+            ->push(['error' => ['message' => 'API key not valid: g-test-key']], 400)
+            ->push(['promptFeedback' => ['blockReason' => 'SAFETY'], 'candidates' => []])
+            ->push($this->geminiAnswer('The robot moves.'));
+
+        $failed = $this->postJson("/api/projects/{$id}/recognise")->assertStatus(502)->assertJson(['code' => 'ai_unavailable']);
+        $this->assertStringNotContainsString('g-test-key', $failed->getContent());
+        $this->postJson("/api/projects/{$id}/recognise")->assertStatus(502)->assertJson(['code' => 'ai_bad_response']);
+        $this->postJson("/api/projects/{$id}/recognise")->assertStatus(502)->assertJson(['code' => 'ai_bad_response']); // text, not JSON
+
+        config(['lab.ai.gemini.key' => '']);
+        $this->postJson("/api/projects/{$id}/recognise")->assertStatus(503)->assertJson(['code' => 'ai_not_configured']);
+        $this->getJson('/api/session')->assertJsonPath('vision.live', false)->assertJsonPath('assistant.available', false);
+        Http::assertSentCount(3);
     }
 
-    public function test_explain_returns_text_and_counts_against_quota(): void
+    // ---- text helpers: explain a block, suggest a mat (always faked) ----------------
+
+    public function test_explain_uses_the_same_provider_and_counts_against_quota(): void
     {
-        $this->useBrain();
-        Http::fake(['*' => Http::response(['response' => 'The robot drives forward 20 cm.'])]);
+        $this->useOpenAi();
+        Http::fake(['api.openai.com/*' => Http::response($this->openAiAnswer("  The robot drives forward 20 cm.\n"))]);
 
         $this->postJson('/api/ai/explain', ['blockText' => 'move forward for 20 cm', 'programText' => 'when program starts'])
             ->assertOk()
@@ -268,29 +294,76 @@ class AiTest extends TestCase
         $this->getJson('/api/usage')->assertJsonPath('usage.ai.used', 1);
         $this->getJson('/api/session')->assertJsonPath('assistant.available', true);
 
-        Http::assertSent(fn (HttpRequest $r) => str_contains(collect($r->data())->pluck('contents', 'name')['user'], 'move forward for 20 cm'));
+        Http::assertSent(function (HttpRequest $request) {
+            $body = $request->data();
+
+            return $request->url() === 'https://api.openai.com/v1/chat/completions'
+                && $request->hasHeader('Authorization', 'Bearer sk-test-key')
+                && $body['model'] === 'vision-model-x'
+                && ! isset($body['response_format'])
+                && ! isset($body['temperature']) // some models only accept their default
+                && $body['messages'][0]['role'] === 'system'
+                && str_contains($body['messages'][0]['content'], '10-year-old')
+                && str_contains($body['messages'][1]['content'], 'move forward for 20 cm')
+                && str_contains($body['messages'][1]['content'], 'when program starts');
+        });
     }
 
-    public function test_explain_validates_input_and_needs_aibrain(): void
+    public function test_explain_works_with_gemini_too(): void
+    {
+        $this->useGemini();
+        Http::fake(['*' => Http::response($this->geminiAnswer('It turns the wheels.'))]);
+
+        $this->postJson('/api/ai/explain', ['blockText' => 'motor C run for 90 degrees'])->assertOk()->assertExactJson(['text' => 'It turns the wheels.']);
+
+        Http::assertSent(fn (HttpRequest $r) => str_contains($r->data()['contents'][0]['parts'][0]['text'], 'motor C run for 90 degrees') && ! isset($r->data()['generationConfig']));
+    }
+
+    public function test_a_custom_openai_compatible_base_url_is_used(): void
+    {
+        $this->useOpenAi();
+        config(['lab.ai.openai.base_url' => 'http://models.test:11434/v1']);
+        Http::fake(['models.test:11434/*' => Http::response($this->openAiAnswer('ok'))]);
+
+        $this->postJson('/api/ai/explain', ['blockText' => 'wait 1 seconds'])->assertOk();
+
+        Http::assertSent(fn (HttpRequest $r) => $r->url() === 'http://models.test:11434/v1/chat/completions');
+    }
+
+    public function test_text_helpers_are_off_in_mock_mode_and_validate_input(): void
     {
         Http::fake();
 
+        // mock provider: no text model, nothing is sent, no quota is spent
+        $this->getJson('/api/session')->assertJsonPath('assistant.available', false);
         $this->postJson('/api/ai/explain', ['blockText' => 'x'])->assertStatus(503)->assertJson(['code' => 'ai_not_configured']);
+        $this->postJson('/api/ai/scene', ['description' => 'x'])->assertStatus(503)->assertJson(['code' => 'ai_not_configured']);
+        $this->getJson('/api/usage')->assertJsonPath('usage.ai.used', 0);
 
-        $this->useBrain();
+        $this->useOpenAi();
         $this->postJson('/api/ai/explain', ['blockText' => str_repeat('x', 301)])->assertStatus(422)->assertJson(['code' => 'validation']);
         $this->postJson('/api/ai/explain', [])->assertStatus(422);
 
         Http::assertNothingSent();
     }
 
+    public function test_provider_errors_in_text_helpers_do_not_leak_details(): void
+    {
+        $this->useOpenAi();
+        Http::fake(['*' => Http::response(['error' => ['message' => 'Incorrect API key provided: sk-test-key']], 401)]);
+
+        $response = $this->postJson('/api/ai/explain', ['blockText' => 'a'])->assertStatus(502)->assertJson(['code' => 'ai_unavailable']);
+
+        $this->assertStringNotContainsString('sk-test-key', $response->getContent());
+    }
+
     public function test_scene_returns_the_parsed_proposal_and_rejects_non_json(): void
     {
-        $this->useBrain();
+        $this->useOpenAi();
         $proposal = ['objects' => [['type' => 'seed_pod_large', 'xCm' => 0, 'yCm' => 40]], 'goal' => ['type' => 'object_in_zone', 'objectType' => 'seed_pod_large'], 'assumptions' => ['The pod is 40 cm ahead.']];
         Http::fakeSequence()
-            ->push(['response' => "```json\n".json_encode($proposal)."\n```"])
-            ->push(['response' => 'Sure! Put a pod somewhere.']);
+            ->push($this->openAiAnswer("```json\n".json_encode($proposal)."\n```"))
+            ->push($this->openAiAnswer('Sure! Put a pod somewhere.'));
 
         $this->postJson('/api/ai/scene', ['description' => 'Push the big seed pod into the circle'])
             ->assertOk()
@@ -300,11 +373,11 @@ class AiTest extends TestCase
         $this->postJson('/api/ai/scene', ['description' => str_repeat('x', 501)])->assertStatus(422);
     }
 
-    public function test_ai_quota_covers_assistant_calls_too(): void
+    public function test_ai_quota_covers_text_helper_calls_too(): void
     {
         config(['lab.limits.ai_requests_per_hour' => 1]);
-        $this->useBrain();
-        Http::fake(['*' => Http::response(['response' => 'ok'])]);
+        $this->useOpenAi();
+        Http::fake(['*' => Http::response($this->openAiAnswer('ok'))]);
 
         $this->postJson('/api/ai/explain', ['blockText' => 'a'])->assertOk();
         $this->postJson('/api/ai/explain', ['blockText' => 'a'])->assertStatus(429)->assertJson(['code' => 'quota']);

@@ -42,8 +42,8 @@ app sits behind a load balancer (login throttling and IP quotas use the client I
 | DELETE | `/api/projects/{id}/screenshots/{sid}` | |
 | GET | `/api/projects/{id}/screenshots/{sid}/image` | private bytes |
 | POST | `/api/projects/{id}/recognise` `{screenshotIds?}` | `{raw, driver, model, screenshotIds}` |
-| POST | `/api/ai/explain` `{blockText, programText?}` | `{text}` via AI Brain |
-| POST | `/api/ai/scene` `{description}` | `{raw}` via AI Brain |
+| POST | `/api/ai/explain` `{blockText, programText?}` | `{text}` from the AI provider |
+| POST | `/api/ai/scene` `{description}` | `{raw}` from the AI provider |
 
 Errors are always `{message, code, ...}`; `message` is written for a child.
 
@@ -56,13 +56,17 @@ and stored on the private `local` disk under random names. `php artisan lab:prun
 
 ## AI
 
-- **Screenshot recognition** — `App\Services\Vision\VisionRecogniser`. `VISION_DRIVER=mock` returns
-  `resources/lab/mock-extraction.json` without looking at the picture; `openai` calls Chat Completions with the
-  images and `resources/lab/vision-prompt.txt`. A misconfigured driver returns `ai_not_configured`; it never falls
-  back to the mock. The backend returns the model's JSON untouched; the frontend validates it.
-- **AI Brain** — `App\Services\AiBrain\AiBrainClient`. Text only (the gateway has no image input):
-  `POST {AIBRAIN_BASE_URL}generate`, multipart `token, system, user, assistant?, temperature` → `{"response": "..."}`.
-  Used for block explanations and scene proposals. The gateway is IP-whitelisted.
+One provider does every AI job. `AI_PROVIDER` selects it; the class is `App\Services\Ai\AiProvider`
+(`recognise()` for screenshots, `text()` for the two text helpers).
+
+- `mock` – returns `resources/lab/mock-extraction.json` without looking at the picture. The text helpers are off.
+- `openai` – Chat Completions with the images and `resources/lab/vision-prompt.txt`. `OPENAI_BASE_URL` can point
+  at any service that speaks the same format.
+- `gemini` – `generateContent` with the images as inline data.
+
+A misconfigured or unknown provider returns `ai_not_configured`; it never falls back to the mock. The backend
+returns the model's JSON untouched; the frontend validates it. The same provider answers `/api/ai/explain` and
+`/api/ai/scene`.
 
 AI never runs the simulation and never changes a program. Every AI call counts against
 `LAB_MAX_AI_REQUESTS_PER_HOUR` (per session; an IP gets 6×), and recognitions are capped at

@@ -2,11 +2,11 @@
 
 namespace App\Providers;
 
-use App\Services\AiBrain\AiBrainClient;
-use App\Services\Vision\MockVisionRecogniser;
-use App\Services\Vision\OpenAiVisionRecogniser;
-use App\Services\Vision\UnconfiguredVisionRecogniser;
-use App\Services\Vision\VisionRecogniser;
+use App\Services\Ai\AiProvider;
+use App\Services\Ai\GeminiProvider;
+use App\Services\Ai\MockAiProvider;
+use App\Services\Ai\OpenAiProvider;
+use App\Services\Ai\UnconfiguredAiProvider;
 use Illuminate\Foundation\Console\ServeCommand;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,26 +14,17 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(VisionRecogniser::class, function () {
-            $driver = config('lab.vision.driver');
+        $this->app->bind(AiProvider::class, function () {
+            $name = (string) config('lab.ai.provider');
+            $timeout = (int) config('lab.ai.timeout');
 
-            return match ($driver) {
-                'mock' => new MockVisionRecogniser,
-                'openai' => new OpenAiVisionRecogniser(
-                    config('lab.vision.openai.key'),
-                    config('lab.vision.openai.model'),
-                    config('lab.vision.openai.base_url'),
-                    config('lab.vision.timeout'),
-                ),
-                default => new UnconfiguredVisionRecogniser((string) $driver),
+            return match ($name) {
+                'mock' => new MockAiProvider,
+                'openai' => new OpenAiProvider(config('lab.ai.openai.key'), config('lab.ai.openai.model'), config('lab.ai.openai.base_url'), $timeout),
+                'gemini' => new GeminiProvider(config('lab.ai.gemini.key'), config('lab.ai.gemini.model'), config('lab.ai.gemini.base_url'), $timeout),
+                default => new UnconfiguredAiProvider($name),
             };
         });
-
-        $this->app->bind(AiBrainClient::class, fn () => new AiBrainClient(
-            config('lab.aibrain.base_url'),
-            config('lab.aibrain.key'),
-            config('lab.aibrain.timeout'),
-        ));
     }
 
     public function boot(): void

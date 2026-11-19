@@ -18,12 +18,13 @@ abstract class TestCase extends BaseTestCase
         // Tests never touch real services or real secrets, whatever the local .env says.
         config([
             'lab.password' => self::PASSWORD,
-            'lab.vision.driver' => 'mock',
-            'lab.vision.openai.key' => '',
-            'lab.vision.openai.model' => '',
-            'lab.vision.openai.base_url' => 'https://api.openai.com/v1',
-            'lab.aibrain.base_url' => '',
-            'lab.aibrain.key' => '',
+            'lab.ai.provider' => 'mock',
+            'lab.ai.openai.key' => '',
+            'lab.ai.openai.model' => '',
+            'lab.ai.openai.base_url' => 'https://api.openai.com/v1',
+            'lab.ai.gemini.key' => '',
+            'lab.ai.gemini.model' => '',
+            'lab.ai.gemini.base_url' => 'https://generativelanguage.googleapis.com/v1beta',
         ]);
 
         Http::preventStrayRequests();

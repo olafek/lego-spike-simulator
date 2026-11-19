@@ -19,7 +19,7 @@ Once authenticated, the central hero action should be **"Upload your SPIKE scree
 ### Screenshot-first guided flow
 
 1. **Upload**: Accept one or multiple SPIKE program screenshots from an iPad (PNG/JPEG/WebP; HEIC with conversion if supported). Support photo library, Files, desktop drag-and-drop, and clipboard where available. Allow cropping/rotation and reordering screenshots. Retain source image references.
-2. **Recognise**: Send screenshots to a vision-capable LLM through the existing AI Brain bridge. Extract connected program block order, all values, units, port assignments, loops, conditions, event hats, and disconnected blocks. Show a child-friendly progress state and explain when recognition fails.
+2. **Recognise**: Send screenshots to a vision-capable LLM through a configurable AI provider. Extract connected program block order, all values, units, port assignments, loops, conditions, event hats, and disconnected blocks. Show a child-friendly progress state and explain when recognition fails.
 3. **Check**: Display the original screenshot **side by side with a visual reconstructed block list**, with confidence flags for ambiguous instructions. Let the child edit values, reorder, add, remove and duplicate blocks. NEVER silently guess unreadable numbers or motor ports. Let them rerun screenshot recognition if needed. Preserve the screenshot and editable program separately.
 4. **Choose robot**: Suggest a robot configuration based on the screenshot or remembered project preference, but ask the child to confirm. Include Driving Bases 1, 2, 3 and Advanced Driving Base where documented. Default to Driving Base 1 only as a clearly visible, changeable assumption. Offer a simple attachment picker, with preview images or recognizable models, and advanced port mapping behind an expandable setting.
 5. **Set mission** (optional): Enter a short description, e.g. "Push the big seed pod into the circle". Offer presets and a simple object palette. AI may propose a scene, but users must approve assumptions about dimensions/positions. Mission description must not be required for basic motion simulation.
@@ -62,7 +62,7 @@ The simulation MUST have a visible floor grid that makes movement distances obvi
 - Engine: framework-independent, deterministic TypeScript simulation core; fixed-time-step movement and versioned state snapshots for stepping/rewind.
 - 3D collision/attachments: use Rapier or another well-supported physics library **only where necessary**, especially for contact and moving objects. Keep one authoritative world state, not conflicting physics and animation positions.
 - Backend: Laravel 12, PHP 8.3+, REST endpoints, SQLite locally, MySQL compatible, validation, auth middleware, rate limiting.
-- Screenshot recognition: AI Brain configurable provider adapter (model must support image/vision inputs). Do not assume the bridge’s exact request/response shape; isolate it behind one adapter and document the contract to fill in. Provide an offline mock fixture to test the flow without AI Brain.
+- Screenshot recognition: configurable AI provider adapter (model must support image/vision inputs). Do not assume the provider’s exact request/response shape; isolate it behind one adapter and document the contract. Provide an offline mock fixture to test the flow without any AI service.
 - Tests: Vitest, Playwright, PHPUnit.
 - Monorepo structure: `/frontend`, `/backend`, `/docs`, `/fixtures`, `/tests`, with optional `/shared`.
 - Use currently compatible stable versions; document environment configuration and scripts. Local development must not require Docker.
@@ -130,13 +130,13 @@ Implement differential drive using configurable wheel diameter, wheel separation
 - Parallel commands execute in parallel when SPIKE semantics require it, not serially for implementation convenience.
 - Camera changes do not reset or mutate the simulation.
 
-## AI Brain integration
+## AI integration
 
 Laravel adapter with configurable values:
-`AIBRAIN_BASE_URL=`
-`AIBRAIN_API_KEY=`
-`AIBRAIN_MODEL=`
-`AIBRAIN_TIMEOUT=`
+`AI_PROVIDER=`
+`OPENAI_API_KEY=` / `GEMINI_API_KEY=`
+`OPENAI_MODEL=` / `GEMINI_MODEL=`
+`AI_TIMEOUT=`
 
 Investigate the actual API schema locally if available; otherwise implement a documented adapter boundary, mocked vision fixture and admin-configurable request/response mapping without claiming a made-up integration works.
 
@@ -190,7 +190,7 @@ Write meaningful automated tests, not mock-passing illusions, for:
 
 **Milestone 2:** 3D Driving Base 1, correctly scaled metric grid and ruler, top-down/3D cameras, deterministic manual program execution, block highlighting, playback/step/rewind, and motion trail. Implement and test a 30 cm move and 90° turn.
 
-**Milestone 3:** Connect real AI Brain vision adapter once actual request format is known, add strict validation/confidence review, support multi-screenshot input and an end-to-end screenshot → simulation demonstration.
+**Milestone 3:** Connect the real AI vision adapter once actual request format is known, add strict validation/confidence review, support multi-screenshot input and an end-to-end screenshot → simulation demonstration.
 
 **Milestone 4:** Driving Bases 2/3/Advanced, hardware configuration, modular attachments, and port mapping.
 
