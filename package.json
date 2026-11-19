@@ -1,0 +1,15 @@
+{
+  "name": "spike-lab",
+  "private": true,
+  "description": "Screenshot-first LEGO SPIKE Prime simulator (monorepo: frontend, backend, tests)",
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "cd backend && php artisan serve",
+    "build": "npm --prefix frontend run build",
+    "test:unit": "npm --prefix frontend test",
+    "test:backend": "cd backend && php artisan test",
+    "test:e2e": "npm --prefix tests test",
+    "test": "npm run test:unit && npm run test:backend && npm run test:e2e",
+    "fixture": "npm --prefix tests run fixture"
+  }
+}

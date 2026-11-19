@@ -1,0 +1,74 @@
+<?php
+
+use App\Http\Controllers\Api\AiController;
+use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ScreenshotController;
+use App\Http\Controllers\Api\SessionController;
+use App\Http\Middleware\LabAuth;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+/*
+| Everything runs in the "web" group: server-side session + CSRF.
+| Only /api/session and /api/login are reachable without the lab password.
+*/
+
+Route::prefix('api')->group(function () {
+    Route::get('session', [SessionController::class, 'show']);
+    Route::post('login', [SessionController::class, 'login']);
+    Route::post('logout', [SessionController::class, 'logout']);
+
+    Route::middleware('lab.auth')->group(function () {
+        Route::get('usage', [SessionController::class, 'usage']);
+
+        Route::get('projects', [ProjectController::class, 'index']);
+        Route::post('projects', [ProjectController::class, 'store']);
+        Route::post('projects/import', [ProjectController::class, 'import']);
+        Route::get('projects/{id}', [ProjectController::class, 'show']);
+        Route::put('projects/{id}', [ProjectController::class, 'update']);
+        Route::delete('projects/{id}', [ProjectController::class, 'destroy']);
+        Route::post('projects/{id}/duplicate', [ProjectController::class, 'duplicate']);
+        Route::get('projects/{id}/export', [ProjectController::class, 'export']);
+
+        Route::post('projects/{id}/screenshots', [ScreenshotController::class, 'store']);
+        Route::put('projects/{id}/screenshots/order', [ScreenshotController::class, 'reorder']);
+        Route::delete('projects/{id}/screenshots/{sid}', [ScreenshotController::class, 'destroy']);
+        Route::get('projects/{id}/screenshots/{sid}/image', [ScreenshotController::class, 'image']);
+
+        Route::post('projects/{id}/recognise', [AiController::class, 'recognise']);
+        Route::post('ai/explain', [AiController::class, 'explain']);
+        Route::post('ai/scene', [AiController::class, 'scene']);
+    });
+
+    Route::any('{any}', fn () => response()->json(['message' => 'We could not find that.', 'code' => 'not_found'], 404))
+        ->where('any', '.*');
+});
+
+// SPA shell. The built JS/CSS in /spa holds no private data; all content comes from the gated API.
+$spa = function (Request $request) {
+    if (! LabAuth::check($request) && trim($request->path(), '/') !== 'login') {
+        return redirect('/login');
+    }
+
+    $index = public_path('spa/index.html');
+
+    if (is_file($index)) {
+        return response(file_get_contents($index), 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    return response(
+        '<!doctype html><meta charset="utf-8"><title>SPIKE Lab</title>'
+        .'<body style="font-family:system-ui;padding:2rem"><h1>SPIKE Lab backend is running</h1>'
+        .'<p>The frontend is not built yet. Run <code>npm run dev</code> in <code>/frontend</code> '
+        .'(development) or <code>npm run build</code> (production) and reload.</p></body>',
+        200,
+        ['Content-Type' => 'text/html; charset=UTF-8'],
+    );
+};
+
+Route::get('/', $spa);
+Route::fallback($spa);

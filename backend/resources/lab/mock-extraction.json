@@ -1,0 +1,63 @@
+{
+  "stacks": [
+    {
+      "hat": { "op": "when_program_starts", "text": "when program starts" },
+      "blocks": [
+        {
+          "op": "set_movement_motors",
+          "params": { "ports": "C+D" },
+          "confidence": 0.97,
+          "uncertain": [],
+          "text": "set movement motors to C+D",
+          "screenshot": 0
+        },
+        {
+          "op": "set_movement_speed",
+          "params": { "speed": 50 },
+          "confidence": 0.96,
+          "uncertain": [],
+          "text": "set movement speed to 50 %",
+          "screenshot": 0
+        },
+        {
+          "op": "move_for",
+          "params": { "direction": "forward", "amount": 20, "unit": "cm" },
+          "confidence": 0.95,
+          "uncertain": [],
+          "text": "move forward for 20 cm",
+          "screenshot": 0
+        },
+        {
+          "op": "motor_run_for",
+          "params": { "ports": null, "direction": "clockwise", "amount": 90, "unit": "degrees" },
+          "confidence": 0.45,
+          "uncertain": ["ports"],
+          "text": "run motor ? clockwise for 90 degrees",
+          "screenshot": 0
+        },
+        {
+          "op": "move_for",
+          "params": { "direction": "backward", "amount": 10, "unit": "cm" },
+          "confidence": 0.93,
+          "uncertain": [],
+          "text": "move backward for 10 cm",
+          "screenshot": 0
+        }
+      ]
+    },
+    {
+      "hat": null,
+      "blocks": [
+        {
+          "op": "wait_seconds",
+          "params": { "seconds": 1 },
+          "confidence": 0.9,
+          "uncertain": [],
+          "text": "wait 1 seconds",
+          "screenshot": 0
+        }
+      ]
+    }
+  ],
+  "notes": ["Mock recognition: this is a stored example, not read from your picture."]
+}

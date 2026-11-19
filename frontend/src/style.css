@@ -1,0 +1,278 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: ui-rounded, 'SF Pro Rounded', 'Nunito', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --color-night: #0e1433;
+  --color-deep: #151d47;
+  --color-panel: #1d2759;
+  --color-panel2: #26327a;
+  --color-line: #36438f;
+  --color-ink: #f4f6ff;
+  --color-soft: #b4bde8;
+  --color-sun: #ffd23f;
+  --color-sunink: #2b2200;
+  --color-sky: #34ccf1;
+  --color-pink: #ff4ccd;
+  --color-leaf: #3ddc84;
+  --color-flag: #ff9835;
+  --color-danger: #ff5d6c;
+  --radius-xl2: 1.25rem;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(1200px 700px at 15% -10%, #2a3690 0%, transparent 60%), radial-gradient(900px 600px at 110% 10%, #5a2a86 0%, transparent 55%), var(--color-night);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+@layer base {
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-sky);
+  outline-offset: 2px;
+  border-radius: 0.6rem;
+}
+
+@layer components {
+  .card {
+    background: color-mix(in srgb, var(--color-panel) 92%, transparent);
+    border: 2px solid var(--color-line);
+    border-radius: var(--radius-xl2);
+  }
+
+  /* All buttons are at least 48px tall: comfortable for fingers on an iPad. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    min-width: 48px;
+    padding: 0.5rem 1.1rem;
+    border-radius: 0.95rem;
+    border: 2px solid transparent;
+    font-weight: 800;
+    line-height: 1.1;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    transition: transform 0.12s ease, filter 0.12s ease, background-color 0.12s ease;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(2px) scale(0.98);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-sun {
+    background: var(--color-sun);
+    color: var(--color-sunink);
+    box-shadow: 0 4px 0 #b98f00;
+  }
+  .btn-sun:active:not(:disabled) {
+    box-shadow: 0 2px 0 #b98f00;
+  }
+  .btn-sky {
+    background: var(--color-sky);
+    color: #00303b;
+    box-shadow: 0 4px 0 #1493b3;
+  }
+  .btn-leaf {
+    background: var(--color-leaf);
+    color: #06361b;
+    box-shadow: 0 4px 0 #1f9a55;
+  }
+  .btn-ghost {
+    background: color-mix(in srgb, var(--color-panel2) 80%, transparent);
+    border-color: var(--color-line);
+    color: var(--color-ink);
+  }
+  .btn-ghost[aria-pressed='true'],
+  .btn-ghost.is-on {
+    background: var(--color-ink);
+    color: var(--color-night);
+    border-color: var(--color-ink);
+  }
+  .btn-danger {
+    background: transparent;
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+  }
+  .btn-sm {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.9rem;
+    border-radius: 0.8rem;
+  }
+  .btn-xl {
+    min-height: 64px;
+    padding: 0.9rem 1.8rem;
+    font-size: 1.25rem;
+    border-radius: 1.2rem;
+  }
+
+  .field {
+    min-height: 48px;
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.9rem;
+    border: 2px solid var(--color-line);
+    background: var(--color-deep);
+    color: var(--color-ink);
+    width: 100%;
+  }
+  .field::placeholder {
+    color: #8791c9;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    background: var(--color-panel2);
+    color: var(--color-ink);
+  }
+  .chip-flag {
+    background: var(--color-flag);
+    color: #3b1c00;
+  }
+  .chip-leaf {
+    background: var(--color-leaf);
+    color: #06361b;
+  }
+  .chip-sky {
+    background: var(--color-sky);
+    color: #00303b;
+  }
+  .chip-est {
+    background: transparent;
+    border: 2px dashed var(--color-flag);
+    color: var(--color-flag);
+  }
+
+  .notice {
+    border-radius: 1rem;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--color-line);
+    background: var(--color-deep);
+  }
+  .notice-warn {
+    border-color: var(--color-flag);
+    background: color-mix(in srgb, var(--color-flag) 14%, var(--color-deep));
+  }
+  .notice-bad {
+    border-color: var(--color-danger);
+    background: color-mix(in srgb, var(--color-danger) 14%, var(--color-deep));
+  }
+  .notice-good {
+    border-color: var(--color-leaf);
+    background: color-mix(in srgb, var(--color-leaf) 14%, var(--color-deep));
+  }
+
+  .muted {
+    color: var(--color-soft);
+  }
+
+  .scroll-y {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* inputs inside coloured program blocks */
+.block-input {
+  min-height: 40px;
+  min-width: 3.2rem;
+  border-radius: 999px;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  background: #ffffff;
+  color: #1b1f2a;
+  font-weight: 800;
+  text-align: center;
+  padding: 0.15rem 0.6rem;
+}
+select.block-input {
+  text-align: left;
+  padding-right: 0.3rem;
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+select.block-input option {
+  color: #1b1f2a;
+  background: #fff;
+}
+.block-input.is-missing {
+  background: #fff3d6;
+  border: 3px dashed var(--color-flag);
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop {
+  animation: pop 0.22s ease-out both;
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+.wiggle {
+  animation: wiggle 1.6s ease-in-out infinite;
+}
+
+@keyframes scan {
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

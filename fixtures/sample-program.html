@@ -1,0 +1,36 @@
+<!doctype html>
+<!-- Source of fixtures/sample-program.png: a drawing in the style of SPIKE word blocks.
+     Regenerate with: npm run fixture (in /tests). The motor port is deliberately smudged so the
+     "could not read this" review flow can be demonstrated. -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { margin: 0; width: 900px; height: 620px; background: #f3f5fb; font-family: 'Segoe UI', Arial, sans-serif; position: relative; }
+      .dots { position: absolute; inset: 0; background-image: radial-gradient(#d5dbea 1.5px, transparent 1.5px); background-size: 28px 28px; }
+      .stack { position: absolute; left: 70px; top: 50px; }
+      .b { display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 18px; margin-bottom: 4px; border-radius: 12px; color: #fff; font-size: 23px; font-weight: 700; width: fit-content; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+      .hat { background: #f5c402; color: #3b2f00; border-radius: 30px 30px 12px 12px; height: 62px; }
+      .move { background: #ff4ccd; } .motor { background: #0090f5; } .ctrl { background: #ffb515; color: #3b2a00; }
+      .v { background: #fff; color: #222; border-radius: 22px; padding: 4px 16px; min-width: 26px; text-align: center; }
+      .d { background: rgba(0,0,0,.22); border-radius: 10px; padding: 4px 12px; }
+      .smudge { position: relative; }
+      .smudge::after { content: ''; position: absolute; inset: -6px -8px; background: radial-gradient(ellipse at center, #5b4630 0%, #6d5539 55%, rgba(109,85,57,.0) 78%); border-radius: 50%; }
+      .loose { position: absolute; left: 560px; top: 420px; }
+      .title { position: absolute; right: 30px; top: 20px; color: #8a93a8; font-size: 18px; font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <div class="dots"></div>
+    <div class="title">My program 1</div>
+    <div class="stack">
+      <div class="b hat">when program starts</div>
+      <div class="b move">set movement motors to <span class="d">C+D ▾</span></div>
+      <div class="b move">set movement speed to <span class="v">50</span> %</div>
+      <div class="b move">move <span class="d">↑ ▾</span> for <span class="v">20</span> <span class="d">cm ▾</span></div>
+      <div class="b motor"><span class="d smudge">E ▾</span> run <span class="d">↻ clockwise ▾</span> for <span class="v">90</span> <span class="d">degrees ▾</span></div>
+      <div class="b move">move <span class="d">↓ ▾</span> for <span class="v">10</span> <span class="d">cm ▾</span></div>
+    </div>
+    <div class="loose"><div class="b ctrl">wait <span class="v">1</span> seconds</div></div>
+  </body>
+</html>

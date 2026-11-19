@@ -1,0 +1,14 @@
+{
+  "name": "spike-lab-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "fixture": "node make-fixture.mjs",
+    "install-browsers": "playwright install chromium webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1"
+  }
+}
