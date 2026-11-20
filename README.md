@@ -33,7 +33,7 @@ speaks the OpenAI format) – see [docs/setup.md](docs/setup.md).
 
 *– Olaf*
 
-It is built for 10–11 year olds: big buttons, few words, iPad first.
+It is built for children: big buttons, few words, iPad first.
 
 ## How it works
 
