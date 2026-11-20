@@ -25,6 +25,15 @@ body,
   height: 100%;
 }
 
+/* iPad: 100% can be taller than what is really visible (home-screen app, after rotating),
+   which pushed the bottom buttons off screen. dvh follows the visible area; the padding
+   keeps content clear of the home indicator. */
+#app {
+  height: 100dvh;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 body {
   margin: 0;
   background: radial-gradient(1200px 700px at 15% -10%, #2a3690 0%, transparent 60%), radial-gradient(900px 600px at 110% 10%, #5a2a86 0%, transparent 55%), var(--color-night);
