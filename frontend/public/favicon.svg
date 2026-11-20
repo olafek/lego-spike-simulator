@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="sun" cx="30%" cy="22%" r="95%">
+      <stop offset="0" stop-color="#ffe680"/>
+      <stop offset="0.55" stop-color="#ffd23f"/>
+      <stop offset="1" stop-color="#ffb81f"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#sun)"/>
+  <!-- eyes -->
+  <circle cx="172" cy="206" r="60" fill="#101a3a"/>
+  <circle cx="340" cy="206" r="60" fill="#101a3a"/>
+  <circle cx="194" cy="184" r="20" fill="#ffffff"/>
+  <circle cx="362" cy="184" r="20" fill="#ffffff"/>
+  <circle cx="156" cy="228" r="8" fill="#34ccf1"/>
+  <circle cx="324" cy="228" r="8" fill="#34ccf1"/>
+  <!-- smile, drawn like the hub's light matrix -->
+  <g fill="#101a3a">
+    <rect x="118" y="318" width="48" height="48" rx="12"/>
+    <rect x="175" y="348" width="48" height="48" rx="12"/>
+    <rect x="232" y="348" width="48" height="48" rx="12"/>
+    <rect x="289" y="348" width="48" height="48" rx="12"/>
+    <rect x="346" y="318" width="48" height="48" rx="12"/>
+  </g>
+</svg>
