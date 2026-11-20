@@ -24,6 +24,7 @@ const backendEnv = {
   LAB_MAX_UPLOADS_PER_HOUR: '2000',
   LAB_MAX_PROJECTS_PER_SESSION_PER_HOUR: '2000',
   AI_PROVIDER: 'mock',
+  LAB_DEMO_ENABLED: 'true',
 }
 
 const tablet = { ...devices['Desktop Chrome'], hasTouch: true, isMobile: false, deviceScaleFactor: 2 }

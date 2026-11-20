@@ -1,6 +1,8 @@
 // Thin client for the Laravel API. Session cookie + XSRF header; every error becomes an ApiError
 // with the child-friendly message the server sent.
 
+import { BASE } from './demo'
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -37,7 +39,7 @@ const JSON_HEADERS = { Accept: 'application/json' }
 
 async function touchSession(): Promise<void> {
   try {
-    await fetch('/api/session', { credentials: 'same-origin', headers: JSON_HEADERS })
+    await fetch(`${BASE}/api/session`, { credentials: 'same-origin', headers: JSON_HEADERS })
   } catch {
     /* handled by the real request */
   }
@@ -58,7 +60,7 @@ async function request<T>(method: string, url: string, body?: unknown, retried =
   }
   let res: Response
   try {
-    res = await fetch(url, { method, headers, body: payload, credentials: 'same-origin' })
+    res = await fetch(BASE + url, { method, headers, body: payload, credentials: 'same-origin' })
   } catch {
     throw new ApiError(0, 'network', FRIENDLY[0])
   }
@@ -84,6 +86,8 @@ async function request<T>(method: string, url: string, body?: unknown, retried =
 
 export interface SessionInfo {
   authenticated: boolean
+  /** true on the public demo: no password, own projects only, offline AI */
+  demo?: boolean
   limits: { maxUploadMb: number; maxScreenshotsPerProject: number; maxImageDimension: number; maxAiRequestsPerHour: number; aiRemaining: number }
   vision: { driver: string; live: boolean }
   assistant: { available: boolean }

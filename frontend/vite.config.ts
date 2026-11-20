@@ -14,7 +14,7 @@ export default defineConfig(({ command }) => ({
   server: {
     port: Number(process.env.LAB_FRONTEND_PORT ?? 5173),
     strictPort: true,
-    proxy: { '/api': { target: backend, changeOrigin: false } },
+    proxy: { '/api': { target: backend, changeOrigin: false }, '/demo/api': { target: backend, changeOrigin: false } },
   },
   build: {
     outDir: '../backend/public/spa',

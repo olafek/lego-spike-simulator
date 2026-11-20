@@ -32,6 +32,17 @@ return [
 
     'retention_days' => max(1, (int) env('LAB_RETENTION_DAYS', 30)),
 
+    // Optional public demo at /demo: no password, offline AI only, visitors see only their own projects.
+    'demo' => [
+        'enabled' => (bool) env('LAB_DEMO_ENABLED', false),
+        'retention_hours' => max(1, (int) env('LAB_DEMO_RETENTION_HOURS', 24)),
+        'screenshots_per_project' => 2,
+        'upload_mb' => 5,
+        'uploads_per_hour' => 12,
+        'projects_per_hour' => 15,
+        'recognitions_per_hour' => 20,
+    ],
+
     // One AI provider does every AI job: reading screenshots, explaining a block, proposing a mat.
     // mock = offline stored example (text helpers off) | openai | gemini
     // VISION_DRIVER / VISION_TIMEOUT are still read so older .env files keep working.

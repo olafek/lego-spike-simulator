@@ -9,6 +9,9 @@
 
 *20 cm is not enough. Change one number, press play again, mission complete.*
 
+**[▶ Try the demo](https://spike.o2ip.com/demo)** – no password, no sign-up. The demo runs without AI, so
+uploads show a stored example; the samples and the whole simulator work for real.
+
 ## Why this exists
 
 Without a robot it is hard to test a series of commands.
@@ -77,13 +80,14 @@ More screens, including the 3D views and the iPad layout: **[the visual tour](do
   they exist; everything else (track width, tool sizes, how objects slide) is an estimate, marked "≈" in the app
   and listed in [docs/robots.md](docs/robots.md). Pushing and lifting are simplified: things slide but do not tip.
 - **One shared password is not privacy.** It keeps strangers out; it does not separate one child's projects
-  from another's. The app says so.
+  from another's. The app says so. (The optional public demo is different: there each visitor only sees
+  their own projects, and they are deleted after a day.)
 
 ## Under the hood
 
 Vue 3 + TypeScript + Three.js in the browser, Laravel on the server, SQLite or MySQL.
-The simulator itself is plain TypeScript with no framework, covered by 72 unit tests; 68 server tests and
-25 browser tests (desktop, iPad landscape, iPad portrait) cover the rest.
+The simulator itself is plain TypeScript with no framework, covered by 72 unit tests; 78 server tests and
+27 browser tests (desktop, iPad landscape, iPad portrait) cover the rest.
 
 **Why Laravel?** I have worked with it since version 5 and I like it. It is also a very good fit for
 AI-assisted coding: the framework is opinionated, so there is one obvious place for everything and far less

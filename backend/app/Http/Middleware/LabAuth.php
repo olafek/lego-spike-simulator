@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Demo;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,6 +24,11 @@ class LabAuth
     /** True when this session passed the password gate and has not outlived LAB_SESSION_HOURS. */
     public static function check(Request $request): bool
     {
+        // The public demo needs no password; it is fenced off by App\Support\Demo instead.
+        if (Demo::active()) {
+            return true;
+        }
+
         if (! $request->hasSession()) {
             return false;
         }

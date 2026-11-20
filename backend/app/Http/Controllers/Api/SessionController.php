@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Middleware\LabAuth;
 use App\Services\Ai\AiProvider;
 use App\Services\UsageLimiter;
+use App\Support\Demo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -21,6 +22,7 @@ class SessionController extends Controller
 
         return response()->json([
             'authenticated' => $authenticated,
+            'demo' => Demo::active(),
             'limits' => [
                 'maxUploadMb' => config('lab.limits.upload_mb'),
                 'maxScreenshotsPerProject' => config('lab.limits.screenshots_per_project'),

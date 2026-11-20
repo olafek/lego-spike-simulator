@@ -108,16 +108,27 @@ class ScreenshotController extends Controller
 
     public function destroy(string $id, string $sid): JsonResponse
     {
-        $shot = Screenshot::where('project_id', $id)->where('id', $sid)->firstOrFail();
+        $shot = $this->screenshot($id, $sid);
         $shot->delete();
         Project::find($id)?->touch();
 
         return response()->json(['deleted' => true]);
     }
 
+    /**
+     * A screenshot is only ever reached through its project, so the project's visibility rules
+     * (lab vs. one demo visitor) always apply to its pictures too.
+     */
+    private function screenshot(string $projectId, string $sid): Screenshot
+    {
+        $project = Project::findOrFail($projectId);
+
+        return Screenshot::where('project_id', $project->id)->where('id', $sid)->firstOrFail();
+    }
+
     public function image(string $id, string $sid): Response
     {
-        $shot = Screenshot::where('project_id', $id)->where('id', $sid)->firstOrFail();
+        $shot = $this->screenshot($id, $sid);
         $bytes = Storage::disk('local')->get($shot->path);
 
         abort_if($bytes === null, 404);

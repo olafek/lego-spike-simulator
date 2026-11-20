@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\Demo;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
@@ -18,8 +20,18 @@ class Project extends Model
 
     protected static function booted(): void
     {
+        // Lab requests only ever see lab projects; a demo visitor only ever sees their own.
+        static::addGlobalScope('demo', function (Builder $query) {
+            if (Demo::active()) {
+                $query->where('projects.demo_owner', Demo::owner());
+            } else {
+                $query->whereNull('projects.demo_owner');
+            }
+        });
+
         static::creating(function (Project $project) {
             $project->id ??= bin2hex(random_bytes(16));
+            $project->demo_owner = Demo::owner();
         });
 
         static::deleting(function (Project $project) {

@@ -27,7 +27,7 @@ class Screenshot extends Model
     public function url(): string
     {
         // Authenticated route; the updated_at stamp only busts the browser cache after a crop/rotate.
-        return "/api/projects/{$this->project_id}/screenshots/{$this->id}/image?v=".($this->updated_at?->timestamp ?? 0);
+        return \App\Support\Demo::prefix()."/api/projects/{$this->project_id}/screenshots/{$this->id}/image?v=".($this->updated_at?->timestamp ?? 0);
     }
 
     public function toApi(): array

@@ -8,6 +8,7 @@ import { startEmpty, StartError, startFromFiles, startFromSample, startFromSampl
 import { SAMPLES, type Sample } from '@/core/samples'
 import { useSession } from '@/stores/session'
 import RobotFace from '@/components/RobotFace.vue'
+import { DEMO } from '@/lib/demo'
 
 const router = useRouter()
 const session = useSession()
@@ -69,7 +70,8 @@ onMounted(async () => {
   window.addEventListener('paste', onPaste)
   try {
     const mine = new Set(recentIds())
-    recent.value = (await api.projects()).filter((p) => mine.has(p.id)).slice(0, 4)
+    // in the demo the server already returns only this visitor's projects
+    recent.value = (await api.projects()).filter((p) => DEMO || mine.has(p.id)).slice(0, 4)
   } catch {
     recent.value = []
   }
@@ -106,7 +108,10 @@ onBeforeUnmount(() => window.removeEventListener('paste', onPaste))
           </div>
         </div>
         <p v-if="error" role="alert" class="notice notice-bad mx-auto mt-4 max-w-xl font-bold" data-testid="start-error">{{ error }}</p>
-        <p v-if="mock" class="chip chip-est mx-auto mt-4">Practice mode: the picture reader is switched off, so every upload shows a stored example.</p>
+        <p v-if="DEMO" class="notice mx-auto mt-4 max-w-xl text-sm font-bold" data-testid="demo-notice">
+          This is the public demo. The picture reader is switched off, so every upload shows a stored example – try the samples below. What you make here is deleted after a day.
+        </p>
+        <p v-else-if="mock" class="chip chip-est mx-auto mt-4">Practice mode: the picture reader is switched off, so every upload shows a stored example.</p>
       </section>
 
       <!-- samples -->

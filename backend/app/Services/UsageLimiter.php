@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\LabException;
+use App\Support\Demo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -21,6 +22,14 @@ class UsageLimiter
         $session = $request->hasSession() ? (string) $request->session()->get('lab_sid', 'none') : 'none';
         $ip = $request->ip() ?? 'unknown';
 
+        // Demo visitors are counted in their own buckets, so they can never use up the lab's quotas.
+        if (Demo::active()) {
+            $session = (string) Demo::owner();
+            $kindKey = "demo:{$kind}";
+        } else {
+            $kindKey = $kind;
+        }
+
         $perSession = (int) match ($kind) {
             'ai' => config('lab.limits.ai_requests_per_hour'),
             'upload' => config('lab.limits.uploads_per_hour'),
@@ -31,8 +40,8 @@ class UsageLimiter
         $perIp = $perSession * (int) config('lab.limits.ai_requests_per_hour_ip_multiplier');
 
         return [
-            "lab:{$kind}:s:{$session}" => $perSession,
-            "lab:{$kind}:ip:".sha1($ip) => $perIp,
+            "lab:{$kindKey}:s:{$session}" => $perSession,
+            "lab:{$kindKey}:ip:".sha1($ip) => $perIp,
         ];
     }
 

@@ -51,7 +51,7 @@ Errors are always `{message, code, ...}`; `message` is written for a child.
 
 Validated by content (finfo + full decode), never by extension. PNG/JPEG/WebP; HEIC only if Imagick has a HEIC
 codec. Images are re-encoded (metadata stripped, EXIF orientation applied), downscaled to `LAB_MAX_IMAGE_DIMENSION`
-and stored on the private `local` disk under random names. `php artisan lab:prune` (scheduled daily; needs
+and stored on the private `local` disk under random names. `php artisan lab:prune` (scheduled hourly; needs
 `php artisan schedule:run` in cron) deletes projects not saved for `LAB_RETENTION_DAYS`.
 
 ## AI

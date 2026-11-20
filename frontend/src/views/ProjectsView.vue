@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { api, ApiError, type ProjectSummary } from '@/lib/api'
 import { forgetProject, recentIds, rememberProject } from '@/lib/recent'
 import { useLab } from '@/stores/lab'
+import { DEMO } from '@/lib/demo'
 
 const router = useRouter()
 const lab = useLab()
@@ -15,7 +16,8 @@ const confirmDelete = ref<string | null>(null)
 const mine = ref(new Set(recentIds()))
 const importer = ref<HTMLInputElement | null>(null)
 
-const shown = computed(() => (everyone.value ? all.value : all.value.filter((p) => mine.value.has(p.id))))
+// in the demo the server only ever returns this visitor's own projects
+const shown = computed(() => (DEMO || everyone.value ? all.value : all.value.filter((p) => mine.value.has(p.id))))
 
 async function refresh() {
   loading.value = true
@@ -95,16 +97,17 @@ onMounted(refresh)
       <div class="flex flex-wrap items-center gap-2">
         <h1 class="text-3xl font-black">Projects</h1>
         <div class="flex-1" />
-        <input ref="importer" type="file" class="sr-only" accept=".json,application/json" aria-label="Import a project file" data-testid="import-input" @change="onImport" />
-        <button class="btn btn-ghost btn-sm" @click="importer?.click()">📥 Import a file</button>
+        <input v-if="!DEMO" ref="importer" type="file" class="sr-only" accept=".json,application/json" aria-label="Import a project file" data-testid="import-input" @change="onImport" />
+        <button v-if="!DEMO" class="btn btn-ghost btn-sm" @click="importer?.click()">📥 Import a file</button>
         <RouterLink to="/" class="btn btn-sun btn-sm">＋ New</RouterLink>
       </div>
 
-      <div class="flex rounded-xl border-2 border-line p-0.5 self-start" role="group" aria-label="Which projects">
+      <div v-if="!DEMO" class="flex rounded-xl border-2 border-line p-0.5 self-start" role="group" aria-label="Which projects">
         <button class="btn btn-sm border-0" :class="!everyone ? 'bg-ink text-night' : 'bg-transparent'" :aria-pressed="!everyone" @click="everyone = false">On this device</button>
         <button class="btn btn-sm border-0" :class="everyone ? 'bg-ink text-night' : 'bg-transparent'" :aria-pressed="everyone" data-testid="show-everyone" @click="everyone = true">Whole lab</button>
       </div>
-      <p class="muted text-sm">Everyone who knows the lab password can open any lab project, so do not put anything private in a project name.</p>
+      <p v-if="DEMO" class="muted text-sm">Demo projects are only visible in this browser and are deleted after a day.</p>
+      <p v-else class="muted text-sm">Everyone who knows the lab password can open any lab project, so do not put anything private in a project name.</p>
 
       <p v-if="error" role="alert" class="notice notice-bad font-bold">{{ error }}</p>
       <p v-if="loading" role="status" class="muted">Loading…</p>

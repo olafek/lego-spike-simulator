@@ -25,8 +25,9 @@ test('30 cm drive: readouts in cm and a true-to-scale grid', async ({ page }) =>
   await expect.poll(async () => Number(await bar.getAttribute('data-px-per-mm'))).not.toBe(before)
   const zoomed = Number(await bar.getAttribute('data-px-per-mm'))
   const zoomedLength = Number(await bar.getAttribute('data-length-mm'))
-  // 30 cm of travel is always exactly three 10 cm squares: 300 mm × px/mm, at any zoom
-  expect((300 * zoomed) / (100 * zoomed)).toBe(3)
+  // the drawn bar really is as long as it says: its width in pixels = its length in mm × px per mm
+  const drawn = (await bar.locator('div').nth(1).boundingBox())!.width
+  expect(Math.abs(drawn - zoomedLength * zoomed)).toBeLessThan(1.5)
   expect(zoomedLength % 10).toBe(0)
   expect(lengthMm % 10).toBe(0)
 })

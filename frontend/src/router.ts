@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSession } from './stores/session'
 import { setUnauthenticatedHandler } from './lib/api'
+import { DEMO } from './lib/demo'
 
 export const router = createRouter({
-  history: createWebHistory('/'),
+  history: createWebHistory(DEMO ? '/demo/' : '/'),
   routes: [
     { path: '/login', name: 'login', component: () => import('./views/GateView.vue'), meta: { open: true } },
     { path: '/', name: 'home', component: () => import('./views/HomeView.vue') },

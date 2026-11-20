@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\DemoMode;
 use App\Http\Middleware\LabAuth;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,18 +16,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias(['lab.auth' => LabAuth::class]);
+        $middleware->alias(['lab.auth' => LabAuth::class, 'lab.demo' => DemoMode::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['password']);
 
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request) => $request->is('api/*', 'demo/api/*') || $request->expectsJson(),
         );
 
         // Every /api error is JSON shaped {message, code}.
         $exceptions->render(function (Throwable $e, Request $request) {
-            if (! $request->is('api/*')) {
+            if (! $request->is('api/*', 'demo/api/*')) {
                 return null;
             }
 

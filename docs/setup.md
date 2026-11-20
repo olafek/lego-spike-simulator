@@ -46,18 +46,38 @@ labelled "practice mode" in the app. The whole flow works with no AI service at 
 | `LAB_MAX_CONCURRENT_ANALYSES`, `LAB_MAX_UPLOADS_PER_HOUR`, `LAB_MAX_PROJECTS_PER_SESSION_PER_HOUR` | Limits against misuse. |
 | `LAB_LOGIN_MAX_ATTEMPTS`, `LAB_LOGIN_COOLDOWN_SECONDS` | Wrong-password throttling. |
 | `LAB_RETENTION_DAYS` | Projects and screenshots untouched for this long are deleted by `php artisan lab:prune`. |
+| `LAB_DEMO_ENABLED` | `true` opens a public demo at `/demo` (see below). Off by default. |
+| `LAB_DEMO_RETENTION_HOURS` | Demo projects are deleted after this many hours (default 24). |
 | `AI_PROVIDER` | `mock`, `openai` or `gemini`. One provider reads the screenshots, explains blocks and suggests mats. |
 | `OPENAI_API_KEY`, `OPENAI_MODEL` | Used when `AI_PROVIDER=openai`. The model must accept images. |
 | `OPENAI_BASE_URL` | Optional. Point it at any other service that speaks the OpenAI chat-completions format. |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | Used when `AI_PROVIDER=gemini`. The model must accept images. |
 | `AI_TIMEOUT` | Seconds to wait for the AI service (default 90). |
 
+## The public demo (optional)
+
+Set `LAB_DEMO_ENABLED=true` and anyone can try the app at `/demo` without the lab password. It is built so
+that a stranger can play with it but cannot reach or cost you anything real:
+
+- **No AI is ever called.** The demo always uses the offline example, whatever `AI_PROVIDER` says, so it
+  cannot spend your AI credits. Uploads work, but every upload shows the stored example reading.
+- **Each visitor only sees what they made.** Demo projects belong to the visitor's own browser session.
+  They cannot list or open anyone else's demo projects, and they cannot see lab projects at all. The lab
+  cannot see demo projects either.
+- **Tighter limits.** Two screenshots per project, 5 MB per picture, and small hourly caps on uploads and
+  new projects, counted separately from the lab's own quotas.
+- **Short-lived.** Demo projects and their pictures are deleted after `LAB_DEMO_RETENTION_HOURS` by the
+  hourly cleanup (this needs the scheduler cron line below).
+- Opening project files (import) is switched off in the demo.
+
+The lab itself is unchanged and still needs the password. With the setting off, `/demo` does not exist.
+
 ## Tests
 
 ```bash
 cd frontend && npm test            # 72 simulator and unit tests (Vitest)
-cd backend  && php artisan test    # 68 API and security tests (PHPUnit)
-cd tests    && npm install && npx playwright install chromium && npm test   # 25 browser tests
+cd backend  && php artisan test    # 78 API and security tests (PHPUnit)
+cd tests    && npm install && npx playwright install chromium && npm test   # 27 browser tests
 ```
 
 The browser tests start their own backend and frontend on ports 8010 and 5183 with a separate database, a

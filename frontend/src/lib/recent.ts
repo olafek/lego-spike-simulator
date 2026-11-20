@@ -1,7 +1,9 @@
 // "On this iPad" project list. The lab password is shared, so this is a convenience, not privacy:
 // anyone with the password can open any project they have the link to.
 
-const KEY = 'spikelab.recent'
+import { DEMO } from './demo'
+
+const KEY = DEMO ? 'spikelab.recent.demo' : 'spikelab.recent'
 
 export function recentIds(): string[] {
   try {

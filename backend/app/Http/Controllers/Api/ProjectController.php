@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Screenshot;
 use App\Services\Images\ImageProcessor;
 use App\Services\UsageLimiter;
+use App\Support\Demo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -132,6 +133,10 @@ class ProjectController extends Controller
 
     public function import(Request $request, UsageLimiter $usage, ImageProcessor $images): JsonResponse
     {
+        if (Demo::active()) {
+            throw new LabException('demo_disabled', 'Opening project files is switched off in the demo.', 403);
+        }
+
         $body = $this->body($request);
 
         if (($body->format ?? null) !== 'spike-lab-project') {

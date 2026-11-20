@@ -69,6 +69,15 @@ A passive fork only pushes. A lift arm picks up liftable things touching its for
 and carries them; a grabber holds what is between its jaws when they close on it. Colour sensor = colour under
 one point; distance sensor = one forward ray (5–200 cm); force sensor = pressed / not pressed.
 
+## The public demo
+
+`/demo` (pages) and `/demo/api/*` (data) are the same app behind a different door, enabled by `LAB_DEMO_ENABLED`.
+The `lab.demo` middleware gives each visitor a random owner id in their session, forces the offline AI
+provider and applies the demo limits for that request only. A global scope on `Project` then does the fencing:
+lab requests only see rows without an owner, a demo request only sees rows with its own. Screenshots are
+always reached through their project, so the same rule covers the pictures. `App\Support\Demo` holds this
+in one place; the frontend only switches its address prefix (`src/lib/demo.ts`).
+
 ## Screenshot recognition
 
 1. Screenshots are stored privately (`storage/app/private`, re-encoded, EXIF stripped) and served only through
