@@ -81,3 +81,26 @@ export async function matPixel(page: Page, dxMm: number, dyMm: number): Promise<
     { href, dxMm, dyMm },
   )
 }
+
+// ---- layout checks (tablets and phones) ---------------------------------------------------------
+
+export async function noSidewaysScroll(page: Page) {
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow, 'page must not scroll sideways').toBeLessThanOrEqual(1)
+}
+
+/** Every visible button must be a comfortable touch target. */
+export async function touchTargets(page: Page, min = 44) {
+  const small = await page.evaluate((minSize) => {
+    const out: string[] = []
+    for (const el of document.querySelectorAll<HTMLElement>('button, a.btn, [role="radio"], input[type="range"]')) {
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) continue
+      const style = getComputedStyle(el)
+      if (style.visibility === 'hidden' || style.display === 'none') continue
+      if (r.height < minSize - 0.5 || r.width < minSize - 0.5) out.push(`${el.getAttribute('data-testid') ?? el.textContent?.trim().slice(0, 20)} ${Math.round(r.width)}×${Math.round(r.height)}`)
+    }
+    return out
+  }, min)
+  expect(small, 'buttons smaller than 44px').toEqual([])
+}

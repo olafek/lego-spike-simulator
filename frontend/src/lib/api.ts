@@ -138,7 +138,9 @@ export const api = {
   logout: () => request<unknown>('POST', '/api/logout'),
   usage: () => request<Record<string, unknown>>('GET', '/api/usage'),
   projects: () => request<ProjectSummary[]>('GET', '/api/projects'),
-  createProject: (name: string, data: unknown) => request<ProjectRecord>('POST', '/api/projects', { name, data }),
+  /** every saved table (not limited to the newest projects) */
+  tables: () => request<ProjectSummary[]>('GET', '/api/projects?tables=1'),
+  createProject: (name: string, data: unknown, table = false) => request<ProjectRecord>('POST', '/api/projects', table ? { name, data, table: true } : { name, data }),
   project: (id: string) => request<ProjectRecord>('GET', `/api/projects/${id}`),
   updateProject: (id: string, patch: { name?: string; data?: unknown }) => request<ProjectRecord>('PUT', `/api/projects/${id}`, patch),
   deleteProject: (id: string) => request<unknown>('DELETE', `/api/projects/${id}`),
@@ -155,6 +157,8 @@ export const api = {
     return request<MatImageInfo>('POST', `/api/projects/${id}/mat-image`, fd)
   },
   deleteMatImage: (id: string) => request<unknown>('DELETE', `/api/projects/${id}/mat-image`),
+  /** copy a saved table's picture onto this project; `tableData` is the table's document, for its scene */
+  useTable: (id: string, tableId: string) => request<ProjectRecord & { tableData: unknown }>('POST', `/api/projects/${id}/use-table`, { tableId }),
   orderScreenshots: (id: string, ids: string[]) => request<ScreenshotInfo[]>('PUT', `/api/projects/${id}/screenshots/order`, { ids }),
   deleteScreenshot: (id: string, sid: string) => request<unknown>('DELETE', `/api/projects/${id}/screenshots/${sid}`),
   recognise: (id: string, screenshotIds?: string[]) =>

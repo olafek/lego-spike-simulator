@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { api, ApiError, type ProjectSummary } from '@/lib/api'
 import { ACCEPT_ATTR } from '@/lib/image'
 import { recentIds } from '@/lib/recent'
-import { startEmpty, StartError, startFromFiles, startFromSample, startFromSampleScreenshot, type UploadProgress } from '@/lib/start'
+import { startEmpty, StartError, startFromFiles, startFromSample, startFromSampleScreenshot, startTable, type UploadProgress } from '@/lib/start'
 import { SAMPLES, type Sample } from '@/core/samples'
 import { useSession } from '@/stores/session'
 import RobotFace from '@/components/RobotFace.vue'
@@ -19,6 +19,7 @@ const progress = ref<UploadProgress | null>(null)
 const error = ref('')
 const picker = ref<HTMLInputElement | null>(null)
 const recent = ref<ProjectSummary[]>([])
+const tables = ref<ProjectSummary[]>([])
 
 const limits = computed(() => session.info?.limits)
 const mock = computed(() => session.info && !session.info.vision.live)
@@ -64,6 +65,7 @@ function onPaste(e: ClipboardEvent) {
 
 const trySample = (s: Sample) => run('Opening the example…', async () => ({ id: await startFromSample(s), read: false }))
 const tryScreenshot = () => run('Sending the example screenshot…', async () => ({ id: await startFromSampleScreenshot(limits.value, (p) => (progress.value = p)), read: true }))
+const newTable = () => run('Getting a new table…', async () => ({ id: await startTable(), read: false }))
 const buildManually = () => run('Getting a blank program…', async () => ({ id: await startEmpty(), read: false }))
 
 onMounted(async () => {
@@ -74,6 +76,11 @@ onMounted(async () => {
     recent.value = (await api.projects()).filter((p) => DEMO || mine.has(p.id)).slice(0, 4)
   } catch {
     recent.value = []
+  }
+  try {
+    tables.value = await api.tables()
+  } catch {
+    tables.value = []
   }
 })
 onBeforeUnmount(() => window.removeEventListener('paste', onPaste))
@@ -135,6 +142,25 @@ onBeforeUnmount(() => window.removeEventListener('paste', onPaste))
             <span class="font-extrabold leading-tight">{{ s.title }}</span>
             <span class="muted text-sm leading-snug">{{ s.blurb }}</span>
           </button>
+        </div>
+      </section>
+
+      <!-- tables -->
+      <section aria-labelledby="tables-title" data-testid="tables-section">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 id="tables-title" class="text-xl font-black">Tables</h2>
+          <button class="btn btn-ghost btn-sm" :disabled="!!busy" data-testid="new-table" @click="newTable">🏁 New table</button>
+        </div>
+        <p v-if="!tables.length" class="muted text-sm">Practising for a competition? Turn a photo of the real table into the floor the robot drives on. Make it once, then use it for every program.</p>
+        <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <RouterLink v-for="t in tables" :key="t.id" :to="{ name: 'lab', params: { id: t.id } }" class="card flex items-center gap-3 p-3" data-testid="table-card">
+            <img v-if="t.matImageUrl" :src="t.matImageUrl" alt="" class="h-14 w-28 shrink-0 rounded-lg bg-deep object-cover" />
+            <span v-else class="flex h-14 w-28 shrink-0 items-center justify-center rounded-lg bg-deep text-2xl" aria-hidden="true">🏁</span>
+            <span class="min-w-0">
+              <span class="block truncate font-extrabold">{{ t.name }}</span>
+              <span class="muted block truncate text-sm">Tap to change the table</span>
+            </span>
+          </RouterLink>
         </div>
       </section>
 

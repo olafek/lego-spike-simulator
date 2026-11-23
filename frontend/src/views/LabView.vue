@@ -17,13 +17,18 @@ const phone = usePhone()
 const route = useRoute()
 const router = useRouter()
 
-const steps: { id: LabStep; label: string; icon: string }[] = [
+const ALL_STEPS: { id: LabStep; label: string; icon: string }[] = [
   { id: 'check', label: 'Check', icon: '🔍' },
   { id: 'robot', label: 'Robot', icon: '🤖' },
   { id: 'mission', label: 'Mat', icon: '🗺️' },
   { id: 'simulate', label: 'Go!', icon: '▶️' },
 ]
-const step = computed(() => lab.data?.step ?? 'check')
+// a table has no program screenshot, so it has no Check step
+const steps = computed(() => (lab.isTable ? ALL_STEPS.filter((s) => s.id !== 'check') : ALL_STEPS))
+const step = computed(() => {
+  const s = lab.data?.step ?? 'check'
+  return lab.isTable && s === 'check' ? 'mission' : s
+})
 
 function go(next: LabStep) {
   lab.pause()
@@ -94,7 +99,8 @@ onBeforeUnmount(() => {
         <RobotStep v-else-if="step === 'robot'" @done="go('mission')" />
         <div v-else-if="step === 'mission'" class="flex h-full min-h-0 flex-col">
           <div class="flex shrink-0 flex-wrap items-center gap-2 px-3 pb-2">
-            <p class="muted flex-1 text-sm">Put things on the mat if you like. You can skip this – the robot drives without a mission too.</p>
+            <p v-if="lab.isTable" class="muted flex-1 text-sm" data-testid="table-hint">🏁 This is a table. Add its picture and the things on it once; every program can then use it.</p>
+            <p v-else class="muted flex-1 text-sm">Put things on the mat if you like. You can skip this – the robot drives without a mission too.</p>
             <button class="btn btn-sun" data-testid="mission-done" @click="go('simulate')">Go to the simulator ➜</button>
           </div>
           <div class="min-h-0 flex-1"><MissionEditor /></div>

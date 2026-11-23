@@ -17,6 +17,7 @@ import { api, ApiError } from '@/lib/api'
 import { useLab } from '@/stores/lab'
 import { useSession } from '@/stores/session'
 import MatPicturePanel from './MatPicturePanel.vue'
+import TablePicker from './TablePicker.vue'
 
 const lab = useLab()
 const session = useSession()
@@ -630,6 +631,8 @@ const selectedName = computed(() => (selected.value === 'robot' ? 'Robot start' 
         {{ message }}
         <button class="btn btn-ghost btn-sm ml-2" @click="message = null">OK</button>
       </div>
+
+      <TablePicker v-if="!lab.isTable" />
 
       <section class="card p-3">
         <h3 class="font-extrabold">Quick missions</h3>

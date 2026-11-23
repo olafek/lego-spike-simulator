@@ -3,7 +3,7 @@
 import { api, ApiError } from './api'
 import { looksLikeImage, prepareForUpload } from './image'
 import { rememberProject } from './recent'
-import { newProjectData } from '@/core/project'
+import { newProjectData, setMat } from '@/core/project'
 import { SAMPLE_SCREENSHOT, type Sample } from '@/core/samples'
 import type { SessionInfo } from './api'
 
@@ -63,6 +63,14 @@ export async function startFromSampleScreenshot(limits: SessionInfo['limits'] | 
   const blob = await res.blob()
   const file = new File([blob], SAMPLE_SCREENSHOT.name, { type: 'image/png' })
   return startFromFiles([file], limits, onProgress, 'Example screenshot')
+}
+
+/** A new table: a competition-size mat that opens at the Mat step, ready for its picture. */
+export async function startTable(): Promise<string> {
+  const data = newProjectData({ step: 'mission' })
+  setMat(data, 'competition')
+  const project = await api.createProject('My table', data, true)
+  return project.id
 }
 
 export async function startEmpty(): Promise<string> {

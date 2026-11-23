@@ -6,12 +6,15 @@ import { api, ApiError, type MatImageInfo, type ScreenshotInfo } from '@/lib/api
 import { rememberProject } from '@/lib/recent'
 import { BLOCK_BY_OP } from '@/core/catalog'
 import { cloneBlock, makeBlock, newId, normaliseRecognition, programProblems, RecognitionError, type Block, type ParamValue, type Program } from '@/core/ir'
-import { newProjectData, parseProjectData, type ProjectData } from '@/core/project'
+import { newProjectData, parseProjectData, setMat, type ProjectData } from '@/core/project'
 import { resolveRobot, ROBOT_BY_ID } from '@/core/robots'
 import { simulate, type SimResult } from '@/core/simulate'
 import { nextBoundary, prevBoundary, readout } from '@/core/timeline'
 
 export { SPEEDS } from '@/lib/speed'
+
+/** localStorage key: the table used last, offered first next time */
+export const LAST_TABLE_KEY = 'spike-lab-last-table'
 
 function findList(program: Program, blockId: string): { list: Block[]; index: number } | null {
   const search = (list: Block[]): { list: Block[]; index: number } | null => {
@@ -353,6 +356,28 @@ export const useLab = defineStore('lab', () => {
     resimulate(false)
   }
 
+  /** Put a saved table onto this project: its picture is copied on the server, its scene here. */
+  async function useTable(tableId: string): Promise<void> {
+    if (!id.value || !data.value) throw new Error('No project')
+    const rec = await api.useTable(id.value, tableId)
+    let table: ProjectData
+    try {
+      table = parseProjectData(rec.tableData)
+    } catch {
+      throw new Error('That table was saved in a format SPIKE Lab cannot read.')
+    }
+    matImage.value = rec.matImage ?? null
+    change((d) => {
+      d.scene = JSON.parse(JSON.stringify(table.scene))
+      setMat(d, table.scene.mat)
+    })
+    try {
+      localStorage.setItem(LAST_TABLE_KEY, tableId)
+    } catch {
+      /* remembering the last table is only a convenience */
+    }
+  }
+
   async function deleteScreenshot(sid: string): Promise<void> {
     if (!id.value) return
     await api.deleteScreenshot(id.value, sid)
@@ -412,6 +437,7 @@ export const useLab = defineStore('lab', () => {
     isTable,
     setMatPicture,
     removeMatPicture,
+    useTable,
     loading,
     loadError,
     saveState,
