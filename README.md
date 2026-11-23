@@ -86,8 +86,8 @@ More screens, including the 3D views and the iPad layout: **[the visual tour](do
 ## Under the hood
 
 Vue 3 + TypeScript + Three.js in the browser, Laravel on the server, SQLite or MySQL.
-The simulator itself is plain TypeScript with no framework, covered by 72 unit tests; 78 server tests and
-27 browser tests (desktop, iPad landscape, iPad portrait) cover the rest.
+The simulator itself is plain TypeScript with no framework, covered by 74 unit tests; 78 server tests and
+40 browser tests (desktop, iPad landscape, iPad portrait, iPhone portrait) cover the rest.
 
 **Why Laravel?** I have worked with it since version 5 and I like it. It is also a very good fit for
 AI-assisted coding: the framework is opinionated, so there is one obvious place for everything and far less

@@ -75,9 +75,9 @@ The lab itself is unchanged and still needs the password. With the setting off, 
 ## Tests
 
 ```bash
-cd frontend && npm test            # 72 simulator and unit tests (Vitest)
+cd frontend && npm test            # 74 simulator and unit tests (Vitest)
 cd backend  && php artisan test    # 78 API and security tests (PHPUnit)
-cd tests    && npm install && npx playwright install chromium && npm test   # 27 browser tests
+cd tests    && npm install && npx playwright install chromium && npm test   # 40 browser tests
 ```
 
 The browser tests start their own backend and frontend on ports 8010 and 5183 with a separate database, a
@@ -137,6 +137,6 @@ In `.env` for production: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=http
 - Conditions with and/or/not run correctly but can only be replaced, not edited part by part.
 - Collision is a small 2D solver: good for pushing, no tipping, stacking or friction model.
 - HEIC upload depends on the server's image library and is untested; iPads normally hand over JPEG or PNG.
-- The browser tests use Chromium with iPad screen sizes and touch. Try Safari on a real iPad before a
-  classroom rollout.
+- The browser tests use Chromium with iPad and iPhone screen sizes and touch. Try Safari on a real iPad
+  (and an iPhone) before a classroom rollout.
 - Robot and tool dimensions beyond the official port and wheel facts are estimates – see [robots.md](robots.md).
