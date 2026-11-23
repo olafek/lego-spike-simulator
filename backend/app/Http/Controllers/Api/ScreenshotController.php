@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Exceptions\LabException;
+use App\Http\Controllers\Api\Concerns\ReadsUploadedImage;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Screenshot;
@@ -15,23 +16,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ScreenshotController extends Controller
 {
+    use ReadsUploadedImage;
+
     public function store(Request $request, UsageLimiter $usage, ImageProcessor $images, string $id): JsonResponse
     {
         $project = Project::with('screenshots')->findOrFail($id);
-        $file = $request->file('image');
-
-        if ($file === null) {
-            // Also the case when PHP dropped the upload for exceeding upload_max_filesize.
-            throw new LabException('invalid_image', 'We did not get a picture. It may be too big (limit '.config('lab.limits.upload_mb').' MB).');
-        }
-
-        if (! $file->isValid()) {
-            if (in_array($file->getError(), [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
-                throw new LabException('too_large', 'That picture is too big. The limit is '.config('lab.limits.upload_mb').' MB.');
-            }
-
-            throw new LabException('upload_failed', 'The picture did not arrive properly. Please try again.', 500, [], 'PHP upload error code '.$file->getError());
-        }
+        $file = $this->uploadedImage($request);
 
         $replaces = null;
         if (is_string($request->input('replaces')) && $request->input('replaces') !== '') {
@@ -49,11 +39,6 @@ class ScreenshotController extends Controller
             );
         }
 
-        // Size is checked before the bytes are read into memory.
-        if ($file->getSize() > config('lab.limits.upload_mb') * 1024 * 1024) {
-            throw new LabException('too_large', 'That picture is too big. The limit is '.config('lab.limits.upload_mb').' MB.');
-        }
-
         $usage->consume($request, 'upload');
 
         $image = $images->process((string) file_get_contents($file->getRealPath()));
@@ -68,7 +53,7 @@ class ScreenshotController extends Controller
     }
 
     /** @param array{bytes:string,mime:string,ext:string,width:int,height:int} $image */
-    public static function persist(Project $project, array $image, int $position, ?string $originalName): Screenshot
+    public static function persist(Project $project, array $image, int $position, ?string $originalName, string $kind = 'program'): Screenshot
     {
         $path = "screenshots/{$project->id}/".bin2hex(random_bytes(12)).'.'.$image['ext'];
         Storage::disk('local')->put($path, $image['bytes']);
@@ -77,6 +62,7 @@ class ScreenshotController extends Controller
 
         return Screenshot::create([
             'project_id' => $project->id,
+            'kind' => $kind,
             'position' => $position,
             'path' => $path,
             'mime' => $image['mime'],

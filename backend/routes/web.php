@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AiController;
+use App\Http\Controllers\Api\MatImageController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ScreenshotController;
 use App\Http\Controllers\Api\SessionController;
@@ -35,6 +36,9 @@ $protected = function () {
     Route::put('projects/{id}/screenshots/order', [ScreenshotController::class, 'reorder']);
     Route::delete('projects/{id}/screenshots/{sid}', [ScreenshotController::class, 'destroy']);
     Route::get('projects/{id}/screenshots/{sid}/image', [ScreenshotController::class, 'image']);
+
+    Route::post('projects/{id}/mat-image', [MatImageController::class, 'store']);
+    Route::delete('projects/{id}/mat-image', [MatImageController::class, 'destroy']);
 
     Route::post('projects/{id}/recognise', [AiController::class, 'recognise']);
     Route::post('ai/explain', [AiController::class, 'explain']);

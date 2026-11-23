@@ -6,6 +6,7 @@ use App\Support\Demo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 class Project extends Model
@@ -16,7 +17,7 @@ class Project extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['last_opened_at' => 'datetime'];
+    protected $casts = ['last_opened_at' => 'datetime', 'is_table' => 'boolean'];
 
     protected static function booted(): void
     {
@@ -41,7 +42,13 @@ class Project extends Model
 
     public function screenshots(): HasMany
     {
-        return $this->hasMany(Screenshot::class)->orderBy('position')->orderBy('created_at');
+        return $this->hasMany(Screenshot::class)->where('kind', 'program')->orderBy('position')->orderBy('created_at');
+    }
+
+    /** The straightened photo of the table shown as this project's floor, if it has one. */
+    public function matImage(): HasOne
+    {
+        return $this->hasOne(Screenshot::class)->where('kind', 'mat');
     }
 
     /** The stored blob decoded with objects preserved ({} stays {}). */
@@ -57,6 +64,8 @@ class Project extends Model
             'name' => $this->name,
             'data' => $this->decodedData(),
             'screenshots' => $this->screenshots->map->toApi()->values()->all(),
+            'matImage' => $this->matImage?->toMatApi(),
+            'table' => (bool) $this->is_table,
             'createdAt' => $this->created_at?->toIso8601String(),
             'updatedAt' => $this->updated_at?->toIso8601String(),
         ];

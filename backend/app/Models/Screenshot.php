@@ -13,6 +13,9 @@ class Screenshot extends Model
 
     protected $guarded = [];
 
+    /** 'program' unless said otherwise (matches the column default). */
+    protected $attributes = ['kind' => 'program'];
+
     protected static function booted(): void
     {
         static::creating(function (Screenshot $shot) {
@@ -28,6 +31,12 @@ class Screenshot extends Model
     {
         // Authenticated route; the updated_at stamp only busts the browser cache after a crop/rotate.
         return \App\Support\Demo::prefix()."/api/projects/{$this->project_id}/screenshots/{$this->id}/image?v=".($this->updated_at?->timestamp ?? 0);
+    }
+
+    /** The shape used for a project's mat picture. */
+    public function toMatApi(): array
+    {
+        return ['id' => $this->id, 'url' => $this->url(), 'width' => (int) $this->width, 'height' => (int) $this->height];
     }
 
     public function toApi(): array

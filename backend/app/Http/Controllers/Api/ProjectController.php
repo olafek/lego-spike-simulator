@@ -66,6 +66,7 @@ class ProjectController extends Controller
     {
         $project = Project::with('screenshots')->findOrFail($id);
         $project->screenshots->each->delete();
+        $project->matImage?->delete();
         $project->delete();
 
         return response()->json(['deleted' => true]);
@@ -104,6 +105,8 @@ class ProjectController extends Controller
                     'original_name' => $shot->original_name,
                 ]);
             }
+
+            MatImageController::copy($source, $copy);
 
             return $copy;
         });
