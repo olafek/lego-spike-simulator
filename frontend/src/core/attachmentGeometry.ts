@@ -12,12 +12,13 @@ export interface LocalRect {
 }
 
 export const LIFT_THRESHOLD_DEG = 12
+const HOOK_BARB = 14
 const CLAW_OPEN_GAP = 104
 const CLAW_CLOSED_GAP = 12
 
 export function toolSize(inst: AttachmentInstance): { w: number; l: number } {
   const def = ATTACHMENTS[inst.kind]
-  if (inst.kind === 'custom') return { w: inst.widthMm ?? def.widthMm, l: inst.lengthMm ?? def.lengthMm }
+  if (inst.kind === 'custom' || inst.kind === 'hook') return { w: inst.widthMm ?? def.widthMm, l: inst.lengthMm ?? def.lengthMm }
   return { w: def.widthMm, l: def.lengthMm }
 }
 
@@ -61,6 +62,12 @@ export function toolRects(robot: RobotConfig, inst: AttachmentInstance, jointDeg
         { x0: gap / 2, x1: gap / 2 + 8, y0: y0 + 8, y1: y0 + l, role: 'jaw' },
       ]
     }
+    case 'hook':
+      // a thin arm with a small barb to one side at the tip
+      return [
+        { x0: -w / 2, x1: w / 2, y0, y1: y0 + l, role: 'body' },
+        { x0: -w / 2 - HOOK_BARB, x1: -w / 2, y0: y0 + l - 10, y1: y0 + l, role: 'tine' },
+      ]
     case 'force_sensor':
       return [{ x0: -8, x1: 8, y0, y1: y0 + l, role: 'sensor' }]
     default:
@@ -84,6 +91,19 @@ export function captureZone(robot: RobotConfig, inst: AttachmentInstance, jointD
     return { x0: -gap / 2, x1: gap / 2, y0: y0 + 8, y1: y0 + l, role: 'body' }
   }
   return null
+}
+
+/** The area at the tip of a hook (robot frame) that catches a pull ring. */
+export function hookZone(robot: RobotConfig, inst: AttachmentInstance): LocalRect {
+  const { w, l } = toolSize(inst)
+  const tip = robot.mounts.frontMm + l
+  return { x0: -w / 2 - HOOK_BARB, x1: w / 2 + 6, y0: tip - 24, y1: tip + 8, role: 'body' }
+}
+
+/** Where a caught ring sits on the hook (robot frame): just behind the barb. */
+export function hookSeat(robot: RobotConfig, inst: AttachmentInstance): { x: number; y: number } {
+  const { w, l } = toolSize(inst)
+  return { x: -w / 2 - HOOK_BARB / 2, y: robot.mounts.frontMm + l - 28 }
 }
 
 /** Height (mm) of a carried object for a lift joint angle. */

@@ -13,7 +13,7 @@ const data = computed(() => lab.data!)
 const suggestion = computed(() => suggestRobot(data.value.program))
 const showAdvanced = ref(false)
 
-const TOOLS: AttachmentKind[] = ['fork', 'wide_fork', 'dozer', 'lift_arm', 'grabber', 'bumper', 'custom']
+const TOOLS: AttachmentKind[] = ['fork', 'wide_fork', 'dozer', 'lift_arm', 'grabber', 'bumper', 'custom', 'hook']
 const SENSORS: AttachmentKind[] = ['color_sensor', 'distance_sensor', 'force_sensor']
 const toolIcons: Record<string, string> = { fork: '🍴', wide_fork: '🔱', dozer: '🚜', lift_arm: '🏗️', grabber: '🦀', bumper: '🛡️', custom: '🧱', color_sensor: '🌈', distance_sensor: '👀', force_sensor: '👆' }
 
@@ -138,7 +138,7 @@ const missingPort = computed(() => data.value.attachments.filter((a) => (ATTACHM
           <div class="min-w-48 flex-1">
             <p class="font-bold">{{ ATTACHMENTS[tool.kind].description }}</p>
             <p class="chip chip-est mt-1">≈ {{ ATTACHMENTS[tool.kind].approximations }}</p>
-            <div v-if="tool.kind === 'custom'" class="mt-2 flex flex-wrap gap-3">
+            <div v-if="tool.kind === 'custom' || tool.kind === 'hook'" class="mt-2 flex flex-wrap gap-3">
               <label class="font-bold">wide <input class="field ml-1 inline w-20" inputmode="decimal" :value="(tool.widthMm ?? ATTACHMENTS.custom.widthMm) / 10" aria-label="Tool width in cm" @change="setSize(tool, 'widthMm', $event)" /> cm</label>
               <label class="font-bold">long <input class="field ml-1 inline w-20" inputmode="decimal" :value="(tool.lengthMm ?? ATTACHMENTS.custom.lengthMm) / 10" aria-label="Tool length in cm" @change="setSize(tool, 'lengthMm', $event)" /> cm</label>
             </div>

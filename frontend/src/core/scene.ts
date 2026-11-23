@@ -16,6 +16,9 @@ export type ObjectType =
   | 'target_zone'
   | 'line'
   | 'finish'
+  | 'push_bar'
+  | 'press_plate'
+  | 'pull_ring'
 
 export interface ObjectDef {
   type: ObjectType
@@ -38,6 +41,8 @@ export interface ObjectDef {
   color: string
   /** colour seen by a colour sensor (flat things only) */
   surface?: ColorName
+  /** a practice stand-in that reacts to the robot: pushed along a rail, pressed on its front, or pulled by a hook */
+  kit?: 'push' | 'press' | 'pull'
   note: string
 }
 
@@ -53,6 +58,11 @@ export const OBJECT_DEFS: Record<ObjectType, ObjectDef> = {
   color_zone: { type: 'color_zone', label: 'Colour patch', icon: '🟥', shape: 'box', w: 150, l: 150, h: 0, solid: false, movable: false, liftable: false, rolls: false, color: '#e3242b', surface: 'red', note: 'Flat. A colour sensor can see it.' },
   target_zone: { type: 'target_zone', label: 'Target circle', icon: '🎯', shape: 'circle', r: 90, h: 0, solid: false, movable: false, liftable: false, rolls: false, color: '#22a84a', surface: 'green', note: 'Flat. Use it as the place to deliver things.' },
   line: { type: 'line', label: 'Black line', icon: '➖', shape: 'box', w: 20, l: 500, h: 0, solid: false, movable: false, liftable: false, rolls: false, color: '#1b1f2a', surface: 'black', note: 'Flat tape for line following.' },
+  // Practice kit: generic stand-ins for the kinds of things a mission asks for. Their front is the side
+  // facing local -y; a push bar travels towards local +y. They are not copies of any real model.
+  push_bar: { type: 'push_bar', label: 'Push bar', icon: '⏩', shape: 'box', w: 120, l: 24, h: 40, solid: true, movable: true, liftable: false, rolls: false, color: '#ff8a3d', kit: 'push', note: '≈ A bar on a short rail. It only slides when it is pushed from the front, and only so far.' },
+  press_plate: { type: 'press_plate', label: 'Press plate', icon: '🔘', shape: 'box', w: 80, l: 40, h: 60, solid: true, movable: false, liftable: false, rolls: false, color: '#b06cff', kit: 'press', note: '≈ A fixed block. Touch its front face to press it.' },
+  pull_ring: { type: 'pull_ring', label: 'Pull ring', icon: '⭕', shape: 'circle', r: 18, h: 10, solid: true, movable: true, liftable: false, rolls: false, color: '#ffd23f', kit: 'pull', note: '≈ A ring on the mat. A hook catches it and pulls it; a hook cannot let it go again.' },
   finish: { type: 'finish', label: 'Finish spot', icon: '🏁', shape: 'box', w: 200, l: 200, h: 0, solid: false, movable: false, liftable: false, rolls: false, color: '#ffd23f', surface: 'yellow', note: 'Flat. Where the robot should end up.' },
 }
 
@@ -68,6 +78,34 @@ export interface SceneObject {
   l?: number
   color?: string
   surface?: ColorName
+  /** kit pieces: false = just an obstacle. Block (obstacle): true = "do not touch" */
+  task?: boolean
+  /** how far a push bar must be pushed / a ring pulled for its task (mm) */
+  targetMm?: number
+  /** rough height of a block (mm); looks only */
+  h?: number
+}
+
+/** Practice kit numbers (all approximate). */
+export const KIT = {
+  push: { travelMm: 80, targetMm: 50, min: 20, max: 80, step: 10 },
+  pull: { targetMm: 100, min: 50, max: 300, step: 50 },
+} as const
+
+/** Rough block heights: low, medium (the usual block), tall. */
+export const BLOCK_HEIGHTS = { low: 40, medium: 80, tall: 160 } as const
+
+/** Does this thing on the mat ask the robot to do (or not do) something? */
+export function hasTask(o: SceneObject): boolean {
+  if (OBJECT_DEFS[o.type]?.kit) return o.task !== false
+  return o.type === 'obstacle' && o.task === true
+}
+
+/** How far a push bar must travel / a ring must be pulled (mm). */
+export function targetOf(o: SceneObject): number {
+  const kit = OBJECT_DEFS[o.type]?.kit
+  const fallback = kit === 'push' ? KIT.push.targetMm : kit === 'pull' ? KIT.pull.targetMm : 0
+  return o.targetMm ?? fallback
 }
 
 export type Goal =
@@ -112,7 +150,7 @@ export function emptyScene(): Scene {
 
 export function objectSize(o: SceneObject): { r: number; w: number; l: number; h: number } {
   const d = OBJECT_DEFS[o.type]
-  return { r: o.r ?? d.r ?? 0, w: o.w ?? d.w ?? 0, l: o.l ?? d.l ?? 0, h: d.h }
+  return { r: o.r ?? d.r ?? 0, w: o.w ?? d.w ?? 0, l: o.l ?? d.l ?? 0, h: o.h ?? d.h }
 }
 
 /** Was this picture straightened for this mat? (Same proportions; a picture is never stretched onto another mat.) */

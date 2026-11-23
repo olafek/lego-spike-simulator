@@ -935,7 +935,7 @@ export class SceneRenderer {
   private buildTool(inst: AttachmentInstance): void {
     const r = this.setup!.robot
     const def = ATTACHMENTS[inst.kind]
-    const height = inst.kind === 'dozer' ? 34 : inst.kind === 'bumper' ? 18 : inst.kind === 'custom' ? 22 : inst.kind === 'force_sensor' ? 16 : 12
+    const height = inst.kind === 'dozer' ? 34 : inst.kind === 'bumper' ? 18 : inst.kind === 'custom' ? 22 : inst.kind === 'hook' ? 14 : inst.kind === 'force_sensor' ? 16 : 12
     const pivot = new THREE.Group()
     const pivotH = 8
     pivot.position.set(0, pivotH, -r.mounts.frontMm)

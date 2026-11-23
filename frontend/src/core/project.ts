@@ -107,6 +107,9 @@ const SceneSchema = z.object({
         l: finite.positive().max(4000).optional(),
         color: z.string().max(20).optional(),
         surface: z.string().max(20).optional(),
+        task: z.boolean().optional(),
+        targetMm: finite.min(10).max(500).optional(),
+        h: finite.min(10).max(400).optional(),
       }),
     )
     .max(60),

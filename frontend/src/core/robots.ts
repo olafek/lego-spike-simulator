@@ -51,7 +51,7 @@ export interface RobotConfig {
   accuracy: { verified: string[]; approximate: string[] }
 }
 
-export type AttachmentKind = 'fork' | 'wide_fork' | 'dozer' | 'lift_arm' | 'grabber' | 'bumper' | 'custom' | 'color_sensor' | 'distance_sensor' | 'force_sensor'
+export type AttachmentKind = 'fork' | 'wide_fork' | 'dozer' | 'lift_arm' | 'grabber' | 'bumper' | 'custom' | 'hook' | 'color_sensor' | 'distance_sensor' | 'force_sensor'
 
 export interface AttachmentDef {
   kind: AttachmentKind
@@ -151,11 +151,21 @@ export const ATTACHMENTS: Record<AttachmentKind, AttachmentDef> = {
     kind: 'custom',
     name: 'My own tool',
     group: 'tool',
-    description: 'A plain block-shaped tool. You choose how wide and long it is.',
+    description: 'A plain block-shaped tool. You choose how wide and long it is. Use it as a ram: set how wide and long yours is.',
     motorised: false,
     lengthMm: 60,
     widthMm: 100,
     approximations: 'Simple box shape that pushes only.',
+  },
+  hook: {
+    kind: 'hook',
+    name: 'Hook',
+    group: 'tool',
+    description: 'A thin arm with a hook at the end. Drive it into a pull ring to catch the ring, then reverse to pull.',
+    motorised: false,
+    lengthMm: 110,
+    widthMm: 16,
+    approximations: '≈ A simple fixed hook. It catches a ring as soon as its tip reaches it and cannot let go again.',
   },
   color_sensor: {
     kind: 'color_sensor',
