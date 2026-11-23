@@ -11,7 +11,9 @@ import { captureZone, clawAngleForGap, clawGap, isRaised, liftHeight, toolRects 
 import { boxShape, circleShape, mtv, overlaps, pointInShape, raycast, rectShape, toLocal, toWorld, type Pose, type Shape } from './geometry'
 import { blockText, programProblems, type Block, type Condition, type Expr, type Program } from './ir'
 import { ATTACHMENTS, wheelCircumferenceMm, type AttachmentInstance, type RobotConfig } from './robots'
-import { CLASSROOM_MAT, OBJECT_DEFS, objectSize, type ObjectDef, type Scene } from './scene'
+import { isWalled, matBounds, OBJECT_DEFS, objectSize, type ObjectDef, type Scene } from './scene'
+
+export { matBounds }
 import { DEG, MM_PER_CM, MM_PER_INCH, wrapDeg180 } from './units'
 
 export interface SimOptions {
@@ -248,8 +250,9 @@ class Simulator {
       })
     }
     for (const ob of this.objects) if (ob.def.solid && !ob.def.movable) this.statics.push(this.objShape(ob))
-    if (setup.scene.mat === 'classroom') {
-      const { x0, x1, y0, y1 } = matBounds()
+    const bounds = matBounds(setup.scene.mat)
+    if (bounds) {
+      const { x0, x1, y0, y1 } = bounds
       const t = 20
       this.statics.push(boxShape((x0 + x1) / 2, y0 - t / 2, x1 - x0 + 2 * t, t, 0))
       this.statics.push(boxShape((x0 + x1) / 2, y1 + t / 2, x1 - x0 + 2 * t, t, 0))
@@ -353,7 +356,7 @@ class Simulator {
       const hit = raycast(o, d, this.objShape(ob))
       if (hit !== null && hit < best) best = hit
     }
-    if (this.scene.mat === 'classroom') {
+    if (isWalled(this.scene.mat)) {
       for (let i = this.statics.length - 4; i < this.statics.length; i++) {
         const hit = raycast(o, d, this.statics[i])
         if (hit !== null && hit < best) best = hit
@@ -367,7 +370,7 @@ class Simulator {
     const c = toWorld(this.pose, 0, front)
     const probe = circleShape(c.x, c.y, 4)
     for (const ob of this.objects) if (ob.def.solid && !ob.carriedBy && overlaps(probe, this.objShape(ob))) return true
-    if (this.scene.mat === 'classroom') for (let i = this.statics.length - 4; i < this.statics.length; i++) if (overlaps(probe, this.statics[i])) return true
+    if (isWalled(this.scene.mat)) for (let i = this.statics.length - 4; i < this.statics.length; i++) if (overlaps(probe, this.statics[i])) return true
     return false
   }
 
@@ -1164,11 +1167,6 @@ function compare(a: number, op: '<' | '>' | '=', b: number): boolean {
   if (op === '<') return a < b
   if (op === '>') return a > b
   return Math.abs(a - b) < 1e-9
-}
-
-/** Bounds of the classroom mat preset; the default start position (0,0) sits near the bottom middle. */
-export function matBounds(): { x0: number; x1: number; y0: number; y1: number } {
-  return { x0: -CLASSROOM_MAT.widthMm / 2, x1: CLASSROOM_MAT.widthMm / 2, y0: -250, y1: CLASSROOM_MAT.lengthMm - 250 }
 }
 
 /** Run a program to completion (or to a safety cutoff) and return the full timeline. */

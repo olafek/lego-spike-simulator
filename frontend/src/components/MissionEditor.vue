@@ -10,7 +10,8 @@ import { MISSION_PRESETS, type MissionPreset } from '@/core/missionPresets'
 import { ATTACHMENTS } from '@/core/robots'
 import { emptyScene, goalText, makeObject, OBJECT_DEFS, objectSize, snap, type ObjectType, type Scene, type SceneObject } from '@/core/scene'
 import { parseSceneProposal, SceneProposalError, type SceneProposal } from '@/core/sceneProposal'
-import { matBounds } from '@/core/simulate'
+import { setMat } from '@/core/project'
+import { matBounds } from '@/core/scene'
 import { DEG, MM_PER_INCH, mmToDisplay, round } from '@/core/units'
 import { api, ApiError } from '@/lib/api'
 import { useLab } from '@/stores/lab'
@@ -48,8 +49,8 @@ const px = (n: number) => n / pxPerMm.value
 function contentBounds(): { x0: number; x1: number; y0: number; y1: number } {
   const s = scene.value
   if (!s) return { x0: -800, x1: 800, y0: -250, y1: 950 }
-  if (s.mat === 'classroom') {
-    const b = matBounds()
+  const b = matBounds(s.mat)
+  if (b) {
     return { x0: b.x0 - 60, x1: b.x1 + 60, y0: b.y0 - 60, y1: b.y1 + 60 }
   }
   let bx0 = s.start.x - 200
@@ -131,7 +132,7 @@ const labelEvery = computed(() => Math.max(1, Math.ceil(34 / (major.value * pxPe
 const labelValue = (mm: number) => String(round(mmToDisplay(mm, unit.value), unit.value === 'cm' ? 0 : 1))
 const isLabelled = (mm: number) => Math.round(mm / major.value) % labelEvery.value === 0
 const legend = computed(() => `1 square = ${round(mmToDisplay(major.value, unit.value), 1)} ${unit.value}`)
-const mat = computed(() => (scene.value?.mat === 'classroom' ? matBounds() : null))
+const mat = computed(() => (scene.value ? matBounds(scene.value.mat) : null))
 
 // ---- selection & dragging -------------------------------------------------------------------
 
@@ -690,12 +691,14 @@ const selectedName = computed(() => (selected.value === 'robot' ? 'Robot start' 
       <section class="card p-3">
         <h3 class="mb-2 font-extrabold">Mat</h3>
         <div class="flex flex-wrap gap-2">
-          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'open'" @click="lab.change((d) => (d.scene.mat = 'open'))">Open floor</button>
-          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'classroom'" @click="lab.change((d) => (d.scene.mat = 'classroom'))">Classroom mat</button>
+          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'open'" data-testid="mat-open" @click="lab.change((d) => setMat(d, 'open'))">Open floor</button>
+          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'classroom'" data-testid="mat-classroom" @click="lab.change((d) => setMat(d, 'classroom'))">Classroom mat</button>
+          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'competition'" data-testid="mat-competition" @click="lab.change((d) => setMat(d, 'competition'))">Competition table</button>
           <button class="btn btn-ghost btn-sm" :aria-pressed="settings.snap" @click="lab.change((d) => (d.settings.snap = !d.settings.snap), false)">Snap to grid: {{ settings.snap ? 'on' : 'off' }}</button>
           <button class="btn btn-danger btn-sm" :disabled="scene.objects.length === 0" @click="clearAll">Clear everything</button>
         </div>
         <p v-if="scene.mat === 'classroom'" class="muted mt-2 text-xs">Classroom mat: 200 × 110 cm with a border wall (a typical table size, not an official mat).</p>
+        <p v-if="scene.mat === 'competition'" class="muted mt-2 text-xs" data-testid="mat-note">Competition table: about 236 × 114 cm with a border wall.</p>
       </section>
     </div>
   </div>

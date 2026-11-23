@@ -80,12 +80,31 @@ export interface Scene {
   goal: Goal | null
   description: string
   floor: ColorName
-  /** 'open' = endless floor, 'classroom' = bordered mat */
-  mat: 'open' | 'classroom'
+  /** 'open' = endless floor; the other two are bordered mats */
+  mat: MatKind
 }
+
+export type MatKind = 'open' | 'classroom' | 'competition'
 
 /** Basic classroom mat preset: 200 × 110 cm with a low border wall (approximate table size). */
 export const CLASSROOM_MAT = { widthMm: 2000, lengthMm: 1100 }
+
+/** Competition table: the common competition mat size, about 236 × 114 cm, with a border wall. */
+export const COMPETITION_MAT = { widthMm: 2362, lengthMm: 1143 }
+
+export function isWalled(mat: MatKind): boolean {
+  return mat !== 'open'
+}
+
+export function matSize(mat: MatKind): { widthMm: number; lengthMm: number } | null {
+  return mat === 'classroom' ? CLASSROOM_MAT : mat === 'competition' ? COMPETITION_MAT : null
+}
+
+/** Bounds of a bordered mat (null on the open floor). The default start (0, 0) sits near the bottom middle. */
+export function matBounds(mat: MatKind): { x0: number; x1: number; y0: number; y1: number } | null {
+  const size = matSize(mat)
+  return size ? { x0: -size.widthMm / 2, x1: size.widthMm / 2, y0: -250, y1: size.lengthMm - 250 } : null
+}
 
 export function emptyScene(): Scene {
   return { start: { x: 0, y: 0, headingDeg: 0 }, objects: [], goal: null, description: '', floor: 'white', mat: 'open' }

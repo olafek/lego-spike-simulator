@@ -394,6 +394,14 @@ describe('objects, pushing and lifting (documented approximations)', () => {
     expect(last(r2).objects[0].carried).toBe(false)
   })
 
+  it('stops the robot at the wall of a competition table', () => {
+    const scene: Scene = { ...emptyScene(), mat: 'competition' }
+    const r = run(prog([blk('move_for', { direction: 'forward', amount: 300, unit: 'cm' })]), { scene })
+    expect(last(r).y).toBeLessThan(893)
+    expect(last(r).y).toBeGreaterThan(600)
+    expect(r.warnings.join(' ')).toMatch(/stuck/)
+  })
+
   it('the robot is blocked by a wall and reports it', () => {
     const r = run(prog([blk('move_for', { direction: 'forward', amount: 50, unit: 'cm' })]), { scene: { ...emptyScene(), objects: [makeObject('wall', 0, 300)] } })
     expect(last(r).y).toBeLessThan(300 - 12 - robot.chassis.frontMm + 1)

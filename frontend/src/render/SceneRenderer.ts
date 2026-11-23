@@ -634,8 +634,9 @@ export class SceneRenderer {
     const s = this.setup
     if (!s) return
     const { gridMajorMm: major, gridMinorMm: minor, unit } = s.settings
-    const classroom = s.scene.mat === 'classroom'
-    const ext = classroom ? matBounds() : { x0: -3000, x1: 3000, y0: -3000, y1: 3000 }
+    const bounds = matBounds(s.scene.mat)
+    const classroom = bounds !== null
+    const ext = bounds ?? { x0: -3000, x1: 3000, y0: -3000, y1: 3000 }
     const floorColor = s.scene.floor === 'white' ? C.floor : new THREE.Color(COLOR_HEX[s.scene.floor as ColorName] ?? '#eef1fb').lerp(new THREE.Color(0xffffff), 0.35).getHex()
 
     const flat = (w: number, l: number, color: number, y: number, x = 0, sy = 0): THREE.Mesh => {

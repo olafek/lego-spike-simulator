@@ -4,7 +4,7 @@
 import { z } from 'zod'
 import { emptyProgram, ProgramSchema, type Program } from './ir'
 import { ROBOT_BY_ID, type AttachmentInstance, type RobotOverrides } from './robots'
-import { emptyScene, OBJECT_DEFS, type Scene } from './scene'
+import { emptyScene, OBJECT_DEFS, type MatKind, type Scene } from './scene'
 import type { DisplayUnit } from './units'
 
 export const PROJECT_VERSION = 1
@@ -80,6 +80,15 @@ export function newProjectData(partial: Partial<ProjectData> = {}): ProjectData 
   }
 }
 
+/** Put the project on a mat. A competition table gets the length of a real match unless the limit was changed. */
+export function setMat(d: ProjectData, mat: MatKind): void {
+  d.scene.mat = mat
+  if (mat === 'competition' && d.settings.maxSeconds === DEFAULT_SETTINGS.maxSeconds) d.settings.maxSeconds = COMPETITION_MAX_SECONDS
+}
+
+/** A competition match lasts two and a half minutes. */
+export const COMPETITION_MAX_SECONDS = 150
+
 const PortSchema = z.enum(['A', 'B', 'C', 'D', 'E', 'F'])
 const finite = z.number().finite()
 
@@ -109,7 +118,7 @@ const SceneSchema = z.object({
     .nullable(),
   description: z.string().max(500),
   floor: z.string(),
-  mat: z.enum(['open', 'classroom']),
+  mat: z.enum(['open', 'classroom', 'competition']),
 })
 
 const ProjectSchema = z.object({
