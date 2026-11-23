@@ -82,6 +82,8 @@ class Project extends Model
             'updatedAt' => $this->updated_at?->toIso8601String(),
             'screenshotCount' => $this->screenshots->count(),
             'firstScreenshotUrl' => $first?->url(),
+            'table' => (bool) $this->is_table,
+            'matImageUrl' => $this->matImage?->url(),
             'summary' => is_object($data) ? ($data->summary ?? null) : null,
         ];
     }

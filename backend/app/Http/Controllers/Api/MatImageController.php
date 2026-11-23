@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\LabException;
 use App\Http\Controllers\Api\Concerns\ReadsUploadedImage;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
@@ -49,6 +50,32 @@ class MatImageController extends Controller
         }
 
         return response()->json(['deleted' => true]);
+    }
+
+    /**
+     * Put a saved table onto a project: its picture is copied here; the scene is copied by the
+     * frontend from `tableData`, because the project document belongs to the frontend.
+     * Both projects are found through the usual visibility rules (lab, or one demo visitor's own).
+     */
+    public function useTable(Request $request, string $id): JsonResponse
+    {
+        $project = Project::findOrFail($id);
+        $tableId = $request->input('tableId');
+
+        if (! is_string($tableId) || $tableId === '' || $tableId === $project->id) {
+            throw new LabException('validation', 'Choose a table to use.');
+        }
+
+        $table = Project::findOrFail($tableId);
+
+        if (! $table->is_table) {
+            throw new LabException('not_a_table', 'That is not a saved table.');
+        }
+
+        self::copy($table, $project);
+        $project->touch();
+
+        return response()->json($project->load(['screenshots', 'matImage'])->toApi() + ['tableData' => $table->decodedData()]);
     }
 
     /** Give $to a copy of the mat picture of $from (or no picture, when $from has none). */

@@ -10,15 +10,17 @@ Artisan::command('lab:prune', function () {
 
     $demoCutoff = now()->subHours((int) config('lab.demo.retention_hours'));
 
-    // lab projects after LAB_RETENTION_DAYS, demo projects after LAB_DEMO_RETENTION_HOURS
+    // lab projects after LAB_RETENTION_DAYS, demo projects after LAB_DEMO_RETENTION_HOURS.
+    // Lab tables are kept: a table is made once and used for a whole season.
     $old = Project::withoutGlobalScopes()->with('screenshots')->where(function ($q) use ($cutoff, $demoCutoff) {
-        $q->where(fn ($lab) => $lab->whereNull('demo_owner')->where('updated_at', '<', $cutoff))
+        $q->where(fn ($lab) => $lab->whereNull('demo_owner')->where('is_table', false)->where('updated_at', '<', $cutoff))
             ->orWhere(fn ($demo) => $demo->whereNotNull('demo_owner')->where('updated_at', '<', $demoCutoff));
     });
 
     $old->chunkById(50, function ($projects) use (&$count) {
         foreach ($projects as $project) {
             $project->screenshots->each->delete(); // removes the files
+            $project->matImage?->delete();
             $project->delete();
             $count++;
         }

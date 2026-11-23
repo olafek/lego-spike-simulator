@@ -39,6 +39,7 @@ $protected = function () {
 
     Route::post('projects/{id}/mat-image', [MatImageController::class, 'store']);
     Route::delete('projects/{id}/mat-image', [MatImageController::class, 'destroy']);
+    Route::post('projects/{id}/use-table', [MatImageController::class, 'useTable']);
 
     Route::post('projects/{id}/recognise', [AiController::class, 'recognise']);
     Route::post('ai/explain', [AiController::class, 'explain']);

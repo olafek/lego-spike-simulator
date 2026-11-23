@@ -16,9 +16,12 @@ use Illuminate\Support\Facades\Storage;
 
 class ProjectController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $projects = Project::with('screenshots')->orderByDesc('updated_at')->limit(50)->get();
+        $query = Project::with(['screenshots', 'matImage'])->orderByDesc('updated_at');
+
+        // ?tables=1: every saved table. Otherwise the 50 newest projects of any kind.
+        $projects = $request->boolean('tables') ? $query->where('is_table', true)->get() : $query->limit(50)->get();
 
         return response()->json($projects->map->toListItem()->values()->all());
     }
@@ -30,6 +33,8 @@ class ProjectController extends Controller
         $project = Project::create([
             'name' => $this->cleanName($request->input('name')) ?? 'My SPIKE program',
             'data' => $this->dataFrom($request),
+            // a table is a table from the start; nothing can turn a project into one later
+            'is_table' => ($this->body($request)->table ?? false) === true,
         ]);
 
         return response()->json($project->load('screenshots')->toApi(), 201);
