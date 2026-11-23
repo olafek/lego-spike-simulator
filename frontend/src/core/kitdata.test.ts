@@ -62,7 +62,7 @@ describe('the hook', () => {
   it('is a passive tool with an adjustable size and an approximation note', () => {
     expect(ATTACHMENTS.hook.group).toBe('tool')
     expect(ATTACHMENTS.hook.motorised).toBe(false)
-    expect(ATTACHMENTS.hook.approximations.startsWith('≈')).toBe(true)
+    expect(ATTACHMENTS.hook.approximations).toContain('cannot let go') // shown after a "≈" in the robot step
     expect(toolSize(hook)).toEqual({ w: 16, l: 110 })
     expect(toolSize({ ...hook, lengthMm: 150, widthMm: 20 })).toEqual({ w: 20, l: 150 })
   })

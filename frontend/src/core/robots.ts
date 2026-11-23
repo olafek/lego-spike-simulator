@@ -165,7 +165,7 @@ export const ATTACHMENTS: Record<AttachmentKind, AttachmentDef> = {
     motorised: false,
     lengthMm: 110,
     widthMm: 16,
-    approximations: '≈ A simple fixed hook. It catches a ring as soon as its tip reaches it and cannot let go again.',
+    approximations: 'A simple fixed hook. It catches a ring as soon as its tip reaches it and cannot let go again.',
   },
   color_sensor: {
     kind: 'color_sensor',

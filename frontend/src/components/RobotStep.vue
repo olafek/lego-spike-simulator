@@ -15,7 +15,7 @@ const showAdvanced = ref(false)
 
 const TOOLS: AttachmentKind[] = ['fork', 'wide_fork', 'dozer', 'lift_arm', 'grabber', 'bumper', 'custom', 'hook']
 const SENSORS: AttachmentKind[] = ['color_sensor', 'distance_sensor', 'force_sensor']
-const toolIcons: Record<string, string> = { fork: '🍴', wide_fork: '🔱', dozer: '🚜', lift_arm: '🏗️', grabber: '🦀', bumper: '🛡️', custom: '🧱', color_sensor: '🌈', distance_sensor: '👀', force_sensor: '👆' }
+const toolIcons: Record<string, string> = { fork: '🍴', wide_fork: '🔱', dozer: '🚜', lift_arm: '🏗️', grabber: '🦀', bumper: '🛡️', custom: '🧱', hook: '🪝', color_sensor: '🌈', distance_sensor: '👀', force_sensor: '👆' }
 
 const builtIn = computed(() => new Set(ROBOT_BY_ID[data.value.robotId].defaultAttachments.map((a) => a.uid)))
 const tool = computed(() => data.value.attachments.find((a) => ATTACHMENTS[a.kind].group === 'tool' && !builtIn.value.has(a.uid)) ?? null)
@@ -139,8 +139,8 @@ const missingPort = computed(() => data.value.attachments.filter((a) => (ATTACHM
             <p class="font-bold">{{ ATTACHMENTS[tool.kind].description }}</p>
             <p class="chip chip-est mt-1">≈ {{ ATTACHMENTS[tool.kind].approximations }}</p>
             <div v-if="tool.kind === 'custom' || tool.kind === 'hook'" class="mt-2 flex flex-wrap gap-3">
-              <label class="font-bold">wide <input class="field ml-1 inline w-20" inputmode="decimal" :value="(tool.widthMm ?? ATTACHMENTS.custom.widthMm) / 10" aria-label="Tool width in cm" @change="setSize(tool, 'widthMm', $event)" /> cm</label>
-              <label class="font-bold">long <input class="field ml-1 inline w-20" inputmode="decimal" :value="(tool.lengthMm ?? ATTACHMENTS.custom.lengthMm) / 10" aria-label="Tool length in cm" @change="setSize(tool, 'lengthMm', $event)" /> cm</label>
+              <label class="font-bold">wide <input class="field ml-1 inline w-20" inputmode="decimal" :value="(tool.widthMm ?? ATTACHMENTS[tool.kind].widthMm) / 10" aria-label="Tool width in cm" data-testid="tool-width" @change="setSize(tool, 'widthMm', $event)" /> cm</label>
+              <label class="font-bold">long <input class="field ml-1 inline w-20" inputmode="decimal" :value="(tool.lengthMm ?? ATTACHMENTS[tool.kind].lengthMm) / 10" aria-label="Tool length in cm" data-testid="tool-length" @change="setSize(tool, 'lengthMm', $event)" /> cm</label>
             </div>
             <p v-if="ATTACHMENTS[tool.kind].motorised" class="mt-2 font-bold">
               Its motor is on port

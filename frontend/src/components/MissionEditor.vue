@@ -11,7 +11,7 @@ import { ATTACHMENTS } from '@/core/robots'
 import { emptyScene, goalText, makeObject, OBJECT_DEFS, objectSize, snap, type ObjectType, type Scene, type SceneObject } from '@/core/scene'
 import { parseSceneProposal, SceneProposalError, type SceneProposal } from '@/core/sceneProposal'
 import { setMat } from '@/core/project'
-import { matBounds } from '@/core/scene'
+import { BLOCK_HEIGHTS, hasTask, KIT, matBounds, targetOf } from '@/core/scene'
 import { DEG, MM_PER_INCH, mmToDisplay, round } from '@/core/units'
 import { api, ApiError } from '@/lib/api'
 import { useLab } from '@/stores/lab'
@@ -240,6 +240,34 @@ function editObj(fn: (o: SceneObject) => void): void {
 function rotate(deg: number): void {
   if (selected.value === 'robot') lab.change((d) => (d.scene.start.headingDeg = (((d.scene.start.headingDeg + deg) % 360) + 360) % 360))
   else editObj((o) => (o.rot = (((o.rot + deg) % 360) + 360) % 360))
+}
+
+// ---- practice kit: what a piece asks of the robot ------------------------------------------
+
+const kitOf = (o: SceneObject | null) => (o ? OBJECT_DEFS[o.type].kit ?? null : null)
+/** push bars and pull rings have a distance to reach */
+const targetRange = computed(() => {
+  const kit = kitOf(selectedObj.value)
+  return kit === 'push' ? KIT.push : kit === 'pull' ? KIT.pull : null
+})
+const targetText = computed(() => {
+  const o = selectedObj.value
+  if (!o || !targetRange.value) return ''
+  const cm = round(targetOf(o) / 10, 1)
+  return kitOf(o) === 'push' ? `push ${cm} cm` : `pull ${cm} cm`
+})
+function changeTarget(direction: -1 | 1): void {
+  const range = targetRange.value
+  if (!range) return
+  editObj((o) => (o.targetMm = Math.min(range.max, Math.max(range.min, targetOf(o) + direction * range.step))))
+}
+/** kit pieces: task on/off. A block: "do not touch" on/off. */
+function toggleTask(): void {
+  editObj((o) => (o.task = !hasTask(o)))
+}
+const blockHeight = computed(() => (selectedObj.value ? objectSize(selectedObj.value).h : 0))
+function setBlockHeight(h: number): void {
+  editObj((o) => (o.h = h))
 }
 
 function resize(factor: number): void {
@@ -527,6 +555,11 @@ const selectedName = computed(() => (selected.value === 'robot' ? 'Robot start' 
                 :stroke-width="px(selected === o.id ? 4 : 2)"
               />
             </template>
+            <!-- practice pieces: the front edge (where the robot comes from) and, for a bar, its rail -->
+            <template v-if="OBJECT_DEFS[o.type].kit === 'push' || OBJECT_DEFS[o.type].kit === 'press'">
+              <line data-testid="piece-front" :x1="-objectSize(o).w / 2" :x2="objectSize(o).w / 2" :y1="objectSize(o).l / 2" :y2="objectSize(o).l / 2" stroke="#ffd23f" :stroke-width="px(5)" stroke-linecap="round" pointer-events="none" />
+              <line v-if="OBJECT_DEFS[o.type].kit === 'push'" x1="0" x2="0" :y1="-objectSize(o).l / 2" :y2="-objectSize(o).l / 2 - KIT.push.travelMm" stroke="#1b1f2a" :stroke-width="px(2)" :stroke-dasharray="`${px(5)} ${px(4)}`" pointer-events="none" />
+            </template>
             <text v-if="o.type !== 'line' && o.type !== 'wall'" :transform="`rotate(${-o.rot})`" text-anchor="middle" dominant-baseline="central" :font-size="Math.max(px(16), Math.min(px(30), (objectSize(o).r || Math.min(objectSize(o).w, objectSize(o).l) / 2) * 1.1))" pointer-events="none">
               {{ OBJECT_DEFS[o.type].icon }}
             </text>
@@ -609,6 +642,20 @@ const selectedName = computed(() => (selected.value === 'robot' ? 'Robot start' 
                 @click="setColour(c)"
               />
             </div>
+            <template v-if="kitOf(selectedObj)">
+              <div v-if="targetRange" class="flex items-center gap-1" role="group" aria-label="How far">
+                <button class="btn btn-ghost btn-sm" aria-label="Less far" data-testid="piece-target-less" :disabled="targetOf(selectedObj) <= targetRange.min" @click="changeTarget(-1)">−</button>
+                <span class="chip" data-testid="piece-target">{{ targetText }}</span>
+                <button class="btn btn-ghost btn-sm" aria-label="Further" data-testid="piece-target-more" :disabled="targetOf(selectedObj) >= targetRange.max" @click="changeTarget(1)">+</button>
+              </div>
+              <button class="btn btn-ghost btn-sm" :aria-pressed="hasTask(selectedObj)" data-testid="piece-task-toggle" @click="toggleTask">{{ hasTask(selectedObj) ? '✅ A task' : 'Just an obstacle' }}</button>
+            </template>
+            <template v-if="selectedObj.type === 'obstacle'">
+              <div class="flex gap-1" role="group" aria-label="Block height">
+                <button v-for="(h, name) in BLOCK_HEIGHTS" :key="name" class="btn btn-ghost btn-sm" :aria-pressed="blockHeight === h" :data-testid="`block-height-${name}`" @click="setBlockHeight(h)">{{ name }}</button>
+              </div>
+              <button class="btn btn-ghost btn-sm" :aria-pressed="hasTask(selectedObj)" data-testid="block-avoid-toggle" @click="toggleTask">🚫 Do not touch</button>
+            </template>
             <button class="btn btn-ghost btn-sm" @click="duplicateSelected">Copy</button>
             <button class="btn btn-danger btn-sm" @click="removeSelected">Delete</button>
           </template>

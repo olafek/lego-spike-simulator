@@ -1020,6 +1020,30 @@ export class SceneRenderer {
         g.add(m)
         break
       }
+      case 'pull_ring': {
+        // a ring lying flat on the mat
+        const tube = Math.max(3, size.r * 0.22)
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(size.r - tube, tube, 12, 32), lam(color))
+        ring.rotation.x = Math.PI / 2
+        ring.position.y = tube
+        g.add(ring)
+        break
+      }
+      case 'push_bar':
+      case 'press_plate': {
+        const geo = new THREE.BoxGeometry(size.w, size.h, size.l)
+        const m = new THREE.Mesh(geo, lam(color))
+        m.position.y = size.h / 2
+        g.add(m)
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: color.clone().multiplyScalar(0.55) }))
+        edges.position.y = size.h / 2
+        g.add(edges)
+        // the front face (the side the robot comes from) is marked in yellow; in this group it faces +z
+        const face = new THREE.Mesh(new THREE.PlaneGeometry(size.w * 0.86, size.h * 0.7), new THREE.MeshBasicMaterial({ color: 0xffd23f }))
+        face.position.set(0, size.h / 2, size.l / 2 + 0.6)
+        g.add(face)
+        break
+      }
       case 'box':
       case 'cube':
       case 'obstacle':
