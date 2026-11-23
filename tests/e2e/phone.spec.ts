@@ -81,3 +81,54 @@ test('demo on a phone: ☰ shows Demo and has no Leave button', async ({ page })
   await expect(page.getByTestId('demo-chip')).toBeVisible()
   await expect(page.getByTestId('logout')).toHaveCount(0)
 })
+
+test('simulator: the view gets almost half the screen', async ({ page }) => {
+  await login(page)
+  await openSample(page, 'seed-pod')
+  const canvas = (await page.getByTestId('sim-canvas').boundingBox())!
+  expect(canvas.height).toBeGreaterThanOrEqual(380) // 45% of 844
+  expect(canvas.width).toBeGreaterThanOrEqual(350)
+  for (const id of ['play', 'step-next', 'readout-moved', 'camera-menu']) await expect(page.getByTestId(id)).toBeInViewport()
+  const blocks = (await page.getByRole('complementary', { name: 'Program and results' }).boundingBox())!
+  expect(844 - blocks.y, 'blocks stay visible under the stage').toBeGreaterThanOrEqual(160)
+})
+
+test('simulator: readout details and camera menu', async ({ page }) => {
+  await login(page)
+  await openSample(page, 'seed-pod')
+  await expect(page.getByTestId('move-readout')).toHaveCount(0)
+  await page.getByTestId('readout-details').tap()
+  await expect(page.getByTestId('move-readout')).toContainText('Asked: 20 cm')
+  await page.getByTestId('readout-details').tap()
+  await expect(page.getByTestId('move-readout')).toHaveCount(0)
+
+  await expect(page.getByTestId('camera-orbit')).toHaveCount(0)
+  await page.getByTestId('camera-menu').tap()
+  await page.getByTestId('camera-orbit').tap()
+  await expect(page.getByTestId('camera-orbit')).toHaveCount(0)
+  await expect(page.getByTestId('camera-menu')).toHaveAttribute('aria-label', /3D/)
+  await page.getByTestId('camera-menu').tap()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('camera-top')).toHaveCount(0)
+})
+
+test('simulator: warnings stay visible with long inch readouts', async ({ page }) => {
+  await login(page)
+  await openSample(page, 'seed-pod')
+  const url = page.url()
+  await page.getByTestId('lab-menu').tap()
+  await page.getByTestId('nav-settings').tap()
+  // leaving the lab saves too, so wait for the save that carries the new calibration
+  const saved = page.waitForResponse((r) => r.request().method() === 'PUT' && !!r.request().postData()?.includes('"calibration":"hardware"'))
+  await page.getByTestId('calibration-hardware').tap()
+  await saved
+  await page.goto(url)
+  await expect(page.getByTestId('simulate-step')).toBeVisible()
+  await page.getByTestId('view-options').tap()
+  await page.getByTestId('unit-in').tap()
+  await expect(page.getByTestId('estimated-chip')).toBeInViewport()
+  await expect(page.getByTestId('estimated-chip')).toHaveText('≈ estimated')
+  await expect(page.getByTestId('readout-position')).toContainText(' in')
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
+})

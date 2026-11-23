@@ -27,7 +27,7 @@ watch(
 
 <template>
   <button ref="button" type="button" class="btn btn-ghost btn-sm text-xl" aria-label="Menu" :aria-expanded="open" data-testid="lab-menu" @click="open = !open">☰</button>
-  <div v-if="open" ref="panel" class="card absolute inset-x-2 top-full z-30 flex flex-col gap-2 p-3 shadow-xl" role="group" aria-label="Lab menu" data-testid="lab-menu-panel">
+  <div v-if="open" ref="panel" class="card absolute inset-x-2 top-full z-30 flex flex-col gap-2 bg-panel! p-3 shadow-xl" role="group" aria-label="Lab menu" data-testid="lab-menu-panel">
     <div class="flex items-center gap-2">
       <RouterLink to="/" class="flex min-h-11 items-center gap-2 rounded-xl pr-2 text-lg font-black tracking-tight" data-testid="nav-home">
         <RobotFace class="h-10 w-10" />

@@ -4,11 +4,13 @@ import type { CameraMode } from '@/core/project'
 import { ATTACHMENTS } from '@/core/robots'
 import { goalText } from '@/core/scene'
 import { formatLength, gridChoices, round, type DisplayUnit } from '@/core/units'
+import { useDismiss } from '@/lib/dismiss'
 import { usePhone } from '@/lib/phone'
 import { blip } from '@/lib/sound'
 import { nextSpeed } from '@/lib/speed'
 import { SPEEDS, useLab } from '@/stores/lab'
 import { useSession } from '@/stores/session'
+import MoveReadout from './MoveReadout.vue'
 import ProgramPanel from './ProgramPanel.vue'
 import SimViewport from './SimViewport.vue'
 
@@ -44,7 +46,16 @@ const finished = computed(() => lab.atEnd && canPlay.value)
 const visibleEvents = computed(() => (result.value?.events ?? []).filter((e) => e.frame <= lab.frameIndex))
 const sensors = computed(() => data.value.attachments.filter((a) => ATTACHMENTS[a.kind].sensor))
 
+// phones: one camera button that opens the list, and the move details behind ⓘ
+const cameraMenu = ref(false)
+const cameraButton = ref<HTMLElement | null>(null)
+const cameraList = ref<HTMLElement | null>(null)
+useDismiss(cameraMenu, cameraButton, cameraList)
+const currentCamera = computed(() => cameras.find((c) => c.id === settings.value.camera) ?? cameras[0])
+const showDetails = ref(false)
+
 function setCamera(mode: CameraMode) {
+  cameraMenu.value = false
   lab.change((d) => (d.settings.camera = mode), false)
 }
 function setUnit(u: DisplayUnit) {
@@ -105,53 +116,87 @@ const confetti = Array.from({ length: 28 }, (_, i) => ({ left: (i * 37) % 100, d
 <template>
   <div class="flex h-full min-h-0 flex-col gap-2 px-2 pb-2 lg:flex-row" data-testid="simulate-step">
     <!-- stage -->
-    <section class="flex min-h-0 flex-col gap-2 max-lg:h-[62dvh] max-lg:shrink-0 lg:flex-1" aria-label="Robot simulation">
-      <!-- readouts -->
-      <div class="flex flex-wrap items-center gap-1.5" data-testid="readouts" aria-live="off">
-        <span class="chip text-base" data-testid="readout-moved">Moved: <b>{{ len(m?.movedMm ?? 0) }}</b></span>
-        <span class="chip text-base" data-testid="readout-turned">Turned: <b>{{ round(m?.turnedDeg ?? 0, 0) }}°</b></span>
-        <span class="chip text-base" data-testid="readout-position">Position: <b>x {{ len(m?.xMm ?? 0) }}, y {{ len(m?.yMm ?? 0) }}</b></span>
-        <span v-if="result && !result.exact" class="chip chip-est" data-testid="estimated-chip" title="See the notes below">≈ estimated</span>
-        <span v-if="m?.blocked" class="chip chip-flag">🧱 stuck</span>
-      </div>
-      <div v-if="m?.move" class="flex flex-wrap items-center gap-1.5 text-sm" data-testid="move-readout">
-        <template v-if="m.move.commandedMm !== null">
-          <span class="chip chip-sky">Asked: {{ len(m.move.commandedMm) }}</span>
-          <span class="chip">Driven: {{ len(m.move.actualMm) }}</span>
-          <span class="chip">To go: {{ len(m.move.remainingMm ?? 0) }}</span>
-        </template>
-        <template v-else>
-          <span v-if="m.move.commandedDeg !== null" class="chip chip-sky">Asked: turn {{ round(Math.abs(m.move.commandedDeg), 0) }}° {{ m.move.commandedDeg < 0 ? 'left' : 'right' }}</span>
-          <span class="chip">This block turned: {{ round(m.move.turnedDeg, 0) }}°</span>
-          <span class="chip">Robot centre moved: {{ len(m.move.actualMm) }}</span>
-        </template>
-        <span class="muted">Wheels rolled: left {{ len(m.move.wheelLMm) }}, right {{ len(m.move.wheelRMm) }}</span>
-      </div>
+    <section class="flex min-h-0 flex-col gap-2 max-lg:h-[62dvh] max-lg:shrink-0 max-sm:h-[70dvh] lg:flex-1" aria-label="Robot simulation">
+      <!-- readouts (wider screens; phones get a strip inside the view frame) -->
+      <template v-if="!phone">
+        <div class="flex flex-wrap items-center gap-1.5" data-testid="readouts" aria-live="off">
+          <span class="chip text-base" data-testid="readout-moved">Moved: <b>{{ len(m?.movedMm ?? 0) }}</b></span>
+          <span class="chip text-base" data-testid="readout-turned">Turned: <b>{{ round(m?.turnedDeg ?? 0, 0) }}°</b></span>
+          <span class="chip text-base" data-testid="readout-position">Position: <b>x {{ len(m?.xMm ?? 0) }}, y {{ len(m?.yMm ?? 0) }}</b></span>
+          <span v-if="result && !result.exact" class="chip chip-est" data-testid="estimated-chip" title="See the notes below">≈ estimated</span>
+          <span v-if="m?.blocked" class="chip chip-flag">🧱 stuck</span>
+        </div>
+        <div v-if="m?.move" class="flex flex-wrap items-center gap-1.5 text-sm" data-testid="move-readout">
+          <MoveReadout :move="m.move" :unit="unit" />
+        </div>
+      </template>
 
       <!-- viewport -->
-      <div class="relative min-h-0 flex-1 overflow-hidden rounded-2xl border-2 border-line bg-[#dfe4f5]">
-        <SimViewport />
-        <div class="pointer-events-none absolute left-2 top-2 flex max-w-[70%] flex-wrap gap-1.5">
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border-2 border-line bg-[#dfe4f5]">
+        <div class="relative min-h-0 flex-1">
+          <SimViewport />
+          <div class="pointer-events-none absolute left-2 top-2 flex max-w-[70%] gap-1.5" :class="phone ? 'flex-col items-start' : 'flex-wrap'">
+            <button
+              v-if="phone"
+              ref="cameraButton"
+              type="button"
+              class="btn btn-ghost btn-sm pointer-events-auto"
+              :aria-label="`Camera: ${currentCamera.label}. Change view`"
+              :aria-expanded="cameraMenu"
+              data-testid="camera-menu"
+              @click="cameraMenu = !cameraMenu"
+            >
+              <span aria-hidden="true">{{ currentCamera.icon }}</span>
+            </button>
+            <div v-if="!phone || cameraMenu" ref="cameraList" class="gap-1.5" :class="phone ? 'flex flex-col items-stretch' : 'contents'">
+              <button
+                v-for="c in cameras"
+                :key="c.id"
+                class="btn btn-ghost btn-sm pointer-events-auto"
+                :class="[{ 'is-on': settings.camera === c.id }, phone ? 'justify-start' : '']"
+                :aria-pressed="settings.camera === c.id"
+                :aria-label="`Camera: ${c.label}`"
+                :data-testid="`camera-${c.id}`"
+                @click="setCamera(c.id)"
+              >
+                <span aria-hidden="true">{{ c.icon }}</span><span :class="phone ? '' : 'hidden sm:inline'">{{ c.label }}</span>
+              </button>
+            </div>
+          </div>
+          <div v-if="phone && showDetails && m?.move" class="card absolute inset-x-2 bottom-2 z-10 flex flex-wrap items-center gap-1.5 bg-panel! p-2 text-sm" data-testid="move-readout">
+            <MoveReadout :move="m.move" :unit="unit" />
+          </div>
+          <div v-if="celebrate" class="pointer-events-none absolute inset-0 overflow-hidden" data-testid="celebration">
+            <template v-if="!reducedMotion">
+              <span v-for="(c, i) in confetti" :key="i" class="confetti" :style="{ left: `${c.left}%`, background: c.color, animationDelay: `${c.delay}s`, transform: `rotate(${c.rot}deg)` }" />
+            </template>
+            <div class="pop absolute left-1/2 top-1/3 -translate-x-1/2 rounded-2xl bg-night/90 px-6 py-3 text-2xl font-black text-sun">🎉 Mission complete!</div>
+          </div>
+          <div v-if="blocked" class="absolute inset-x-3 bottom-3 notice notice-warn font-bold" role="status" data-testid="sim-blocked">{{ result?.reason }}</div>
+        </div>
+
+        <!-- phones: the numbers as one strip under the picture -->
+        <div v-if="phone" class="flex shrink-0 flex-wrap items-center gap-x-1.5 gap-y-1 border-t-2 border-line bg-panel px-2 py-1 text-sm" data-testid="readouts" aria-live="off">
+          <span data-testid="readout-moved">Moved <b>{{ len(m?.movedMm ?? 0) }}</b></span>
+          <span aria-hidden="true">·</span>
+          <span data-testid="readout-turned"><span class="sr-only">Turned </span><b>{{ round(m?.turnedDeg ?? 0, 0) }}°</b></span>
+          <span aria-hidden="true">·</span>
+          <span data-testid="readout-position"><span class="sr-only">Position </span><b>x {{ len(m?.xMm ?? 0) }}, y {{ len(m?.yMm ?? 0) }}</b></span>
+          <span v-if="result && !result.exact" class="chip chip-est" data-testid="estimated-chip" title="See the notes below">≈ estimated</span>
+          <span v-if="m?.blocked" class="chip chip-flag">🧱 stuck</span>
           <button
-            v-for="c in cameras"
-            :key="c.id"
-            class="btn btn-ghost btn-sm pointer-events-auto"
-            :class="{ 'is-on': settings.camera === c.id }"
-            :aria-pressed="settings.camera === c.id"
-            :aria-label="`Camera: ${c.label}`"
-            :data-testid="`camera-${c.id}`"
-            @click="setCamera(c.id)"
+            v-if="m?.move"
+            type="button"
+            class="btn btn-ghost btn-sm ml-auto"
+            :class="{ 'is-on': showDetails }"
+            aria-label="More numbers"
+            :aria-expanded="showDetails"
+            data-testid="readout-details"
+            @click="showDetails = !showDetails"
           >
-            <span aria-hidden="true">{{ c.icon }}</span><span class="hidden sm:inline">{{ c.label }}</span>
+            ⓘ
           </button>
         </div>
-        <div v-if="celebrate" class="pointer-events-none absolute inset-0 overflow-hidden" data-testid="celebration">
-          <template v-if="!reducedMotion">
-            <span v-for="(c, i) in confetti" :key="i" class="confetti" :style="{ left: `${c.left}%`, background: c.color, animationDelay: `${c.delay}s`, transform: `rotate(${c.rot}deg)` }" />
-          </template>
-          <div class="pop absolute left-1/2 top-1/3 -translate-x-1/2 rounded-2xl bg-night/90 px-6 py-3 text-2xl font-black text-sun">🎉 Mission complete!</div>
-        </div>
-        <div v-if="blocked" class="absolute inset-x-3 bottom-3 notice notice-warn font-bold" role="status" data-testid="sim-blocked">{{ result?.reason }}</div>
       </div>
 
       <!-- playback -->

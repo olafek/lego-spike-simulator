@@ -50,7 +50,7 @@ export default defineConfig({
     { name: 'ipad-landscape', use: { ...tablet, viewport: { width: 1180, height: 820 } }, testMatch: /ipad|journey|shots/ },
     { name: 'ipad-portrait', use: { ...tablet, viewport: { width: 820, height: 1180 } }, testMatch: /ipad|journey|shots/ },
     // iPhone held upright (CSS viewport of a 6.1" iPhone), touch enabled.
-    { name: 'iphone-portrait', use: { ...phone, viewport: { width: 390, height: 844 } }, testMatch: /phone/ },
+    { name: 'iphone-portrait', use: { ...phone, viewport: { width: 390, height: 844 } }, testMatch: /ipad|phone/ },
   ],
   webServer: [
     {
