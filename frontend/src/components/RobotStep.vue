@@ -112,9 +112,12 @@ const missingPort = computed(() => data.value.attachments.filter((a) => (ATTACHM
           :data-testid="`robot-${r.id}`"
           @click="pickRobot(r.id)"
         >
-          <span v-if="suggestion.robotId === r.id && suggestion.evidence" class="chip chip-sky absolute left-2 top-2">suggested</span>
-          <span v-if="data.robotId === r.id" class="chip absolute right-2 top-2" :class="data.robotConfirmed ? 'chip-leaf' : 'chip-flag'">{{ data.robotConfirmed ? '✓ chosen' : 'not confirmed' }}</span>
-          <RobotPreview :robot="r" :attachments="r.defaultAttachments" ports class="mt-5 h-32 w-full" />
+          <!-- phones: the badges wrap in a row so they never overlap; wider: pinned to the corners -->
+          <div class="flex w-full flex-wrap justify-between gap-1 sm:contents">
+            <span v-if="suggestion.robotId === r.id && suggestion.evidence" class="chip chip-sky sm:absolute sm:left-2 sm:top-2" data-testid="robot-suggested">suggested</span>
+            <span v-if="data.robotId === r.id" class="chip sm:absolute sm:right-2 sm:top-2" :class="data.robotConfirmed ? 'chip-leaf' : 'chip-flag'" data-testid="robot-state">{{ data.robotConfirmed ? '✓ chosen' : 'not confirmed' }}</span>
+          </div>
+          <RobotPreview :robot="r" :attachments="r.defaultAttachments" ports class="h-32 w-full sm:mt-5" />
           <span class="text-lg font-black leading-tight">{{ r.name }}</span>
           <span class="muted text-sm leading-snug">{{ r.tagline }}</span>
           <span class="muted text-xs">wheels on {{ r.drive.left.port }}+{{ r.drive.right.port }} · {{ (wheelCircumferenceMm(r) / 10).toFixed(1) }} cm per turn</span>

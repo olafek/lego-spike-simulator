@@ -132,3 +132,14 @@ test('simulator: warnings stay visible with long inch readouts', async ({ page }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   expect(overflow).toBeLessThanOrEqual(1)
 })
+
+test('robot step: the badges on a card do not overlap', async ({ page }) => {
+  await login(page)
+  await page.getByTestId('sample-screenshot').tap()
+  await expect(page.getByTestId('program-panel')).toBeVisible({ timeout: 30_000 })
+  await page.getByTestId('step-robot').tap()
+  const a = (await page.getByTestId('robot-suggested').boundingBox())!
+  const b = (await page.getByTestId('robot-state').boundingBox())!
+  const overlap = a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+  expect(overlap).toBe(false)
+})
