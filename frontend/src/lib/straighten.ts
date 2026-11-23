@@ -8,13 +8,28 @@ export const PHOTO_REFUSED = 'This kind of photo cannot be opened here. Choose i
 /** Big enough for a sharp mat, small enough for a phone's memory. */
 const WORK_MAX = 2600
 
+/**
+ * iPhone photos are HEIC, which most browsers other than Safari cannot open. Convert such a photo here,
+ * in the browser, so it still never has to be sent anywhere. The decoder is large, so it is only loaded
+ * when a photo actually needs it.
+ */
+async function decodeHeic(file: Blob): Promise<ImageBitmap> {
+  try {
+    const { heicTo, isHeic } = await import('heic-to')
+    if (!(await isHeic(file as File))) throw new Error('not HEIC')
+    return await heicTo({ blob: file, type: 'bitmap' })
+  } catch {
+    throw new Error(PHOTO_REFUSED)
+  }
+}
+
 /** Decode a photo into a canvas (shrunk if huge). Rejects with a friendly message when the browser cannot open it. */
 export async function openPhoto(file: Blob): Promise<HTMLCanvasElement> {
   let bitmap: ImageBitmap
   try {
     bitmap = await createImageBitmap(file)
   } catch {
-    throw new Error(PHOTO_REFUSED)
+    bitmap = await decodeHeic(file)
   }
   const k = Math.min(1, WORK_MAX / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')

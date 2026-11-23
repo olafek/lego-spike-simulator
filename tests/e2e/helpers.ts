@@ -35,6 +35,8 @@ export function amountInput(page: Page, op = 'move_for') {
 /** A generated picture of a made-up mat seen at an angle (see tests/make-table-fixture.mjs). */
 export const TABLE_PHOTO = resolve(dirname(fileURLToPath(import.meta.url)), '../../fixtures/sample-table.png')
 /** Where the mat's corners are in that picture, as fractions of its width and height (TL, TR, BR, BL). */
+/** The same picture as an iPhone would save it (HEIC). Made from the PNG with pillow-heif. */
+export const TABLE_PHOTO_HEIC = resolve(dirname(fileURLToPath(import.meta.url)), '../../fixtures/sample-table.heic')
 export const TABLE_CORNERS: [number, number][] = [
   [0.15, 0.2],
   [0.85, 0.12],

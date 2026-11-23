@@ -92,8 +92,10 @@ the default 60 s.
 
 ### 3. Straightening (browser)
 A "Table picture" panel in the Mat step:
-1. **Choose a photo.** It must be one the browser itself can open (JPEG, PNG, WebP; HEIC only where the
-   browser decodes it, as Safari does). A photo the browser cannot open is refused with: "This kind of photo
+1. **Choose a photo.** JPEG, PNG, WebP or HEIC. iPhone photos are HEIC, which most browsers other than
+   Safari cannot open, so the app converts them itself, in the browser, with a decoder that is only
+   downloaded when needed (added after the first build, at the owner's request). A file that still cannot
+   be opened is refused with: "This kind of photo
    cannot be opened here. Choose it on the iPad or iPhone, or save it as a JPEG first." It is never sent to
    the server for conversion (my call: keeps the original photo off the server).
 2. **Mark the four corners of the mat.** The photo is shown with four large handles (top-left, top-right,

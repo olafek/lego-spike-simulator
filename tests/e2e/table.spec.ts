@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { addTablePicture, dragCorner, login, matPixel, openSample, TABLE_CORNERS, TABLE_PHOTO } from './helpers'
+import { addTablePicture, dragCorner, login, matPixel, openSample, TABLE_CORNERS, TABLE_PHOTO, TABLE_PHOTO_HEIC } from './helpers'
 
 // A photo of a table becomes the floor. The photo here is a generated picture of a made-up mat.
 
@@ -249,4 +249,27 @@ test('a corner dot dragged far away stays on the screen', async ({ page }) => {
   await dragCorner(page, 0, 0.15, 0.2)
   await dragCorner(page, 2, 0.95, 0.85)
   await expect(page.getByTestId('mat-picture-next')).toBeEnabled()
+})
+
+// iPhone photos are HEIC, which most desktop browsers cannot open. The app converts them itself.
+test('a HEIC photo is converted in the browser and never sent as it is', async ({ page }) => {
+  await openMatStep(page)
+  const uploads: number[] = []
+  page.on('request', (r) => {
+    if (r.method() === 'POST') uploads.push(r.postDataBuffer()?.length ?? 0)
+  })
+  await page.getByTestId('mat-picture-choose').setInputFiles(TABLE_PHOTO_HEIC)
+  await expect(page.getByTestId('corner-photo')).toBeVisible({ timeout: 30_000 })
+  for (let i = 0; i < 4; i++) await dragCorner(page, i, TABLE_CORNERS[i][0], TABLE_CORNERS[i][1])
+  await page.getByTestId('mat-picture-next').click()
+  await page.getByTestId('mat-picture-use').click()
+  await expect(page.getByTestId('mat-picture')).toBeVisible()
+
+  const [r, g, b] = await matPixel(page, 0, 0)
+  expect(r, 'red square on the centre').toBeGreaterThan(170)
+  expect(g).toBeLessThan(100)
+  expect(b).toBeLessThan(100)
+  const [, , b2] = await matPixel(page, -400, -250)
+  expect(b2, 'blue square').toBeGreaterThan(170)
+  expect(uploads.length, 'only the straightened picture is uploaded').toBe(1)
 })

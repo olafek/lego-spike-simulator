@@ -93,7 +93,7 @@ More screens, including the 3D views and the iPad and iPhone layouts: **[the vis
 
 Vue 3 + TypeScript + Three.js in the browser, Laravel on the server, SQLite or MySQL.
 The simulator itself is plain TypeScript with no framework, covered by 87 unit tests; 96 server tests and
-65 browser tests (desktop, iPad landscape, iPad portrait, iPhone portrait) cover the rest.
+66 browser tests (desktop, iPad landscape, iPad portrait, iPhone portrait) cover the rest.
 
 **Why Laravel?** I have worked with it since version 5 and I like it. It is also a very good fit for
 AI-assisted coding: the framework is opinionated, so there is one obvious place for everything and far less
@@ -115,7 +115,9 @@ The full list is at the end of [docs/setup.md](docs/setup.md).
 
 ## Licence
 
-[MIT](LICENSE) – use it, change it, share it.
+[MIT](LICENSE) – use it, change it, share it. One optional part is under a different licence: the HEIC photo
+decoder (`heic-to`, built on libheif) is LGPL-3.0. It is a separate file that the browser only loads when
+someone picks a HEIC photo for a table.
 
 ---
 

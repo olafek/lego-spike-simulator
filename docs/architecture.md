@@ -85,7 +85,9 @@ every mat kind come from `matSize()` / `matBounds()` in `core/scene.ts`). Runs o
 
 Its floor can be a photo of the real table:
 
-1. The browser opens the photo and the user marks the mat's four corners (`MatPicturePanel.vue`).
+1. The browser opens the photo and the user marks the mat's four corners (`MatPicturePanel.vue`). iPhone
+   photos are HEIC, which only Safari opens by itself; elsewhere `lib/straighten.ts` converts them in the
+   browser with the `heic-to` library (libheif, LGPL-3.0), loaded on demand as its own 3 MB file.
 2. `core/homography.ts` solves the mapping between those corners and the mat rectangle; `lib/straighten.ts`
    looks every pixel of the mat up in the photo on a canvas. Nothing is sent to the server until this is done,
    so the original photo (which may show people) never leaves the device.

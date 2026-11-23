@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "heic-to": "^1.6.7",
     "pinia": "^4.1.0",
     "three": "^0.187.0",
     "vue": "^3.5.45",

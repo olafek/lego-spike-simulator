@@ -77,7 +77,7 @@ The lab itself is unchanged and still needs the password. With the setting off, 
 ```bash
 cd frontend && npm test            # 87 simulator and unit tests (Vitest)
 cd backend  && php artisan test    # 96 API and security tests (PHPUnit)
-cd tests    && npm install && npx playwright install chromium && npm test   # 65 browser tests
+cd tests    && npm install && npx playwright install chromium && npm test   # 66 browser tests
 ```
 
 The browser tests start their own backend and frontend on ports 8010 and 5183 with a separate database, a
@@ -88,6 +88,8 @@ reader once (one paid AI request) and prints what came back.
 
 `npm run fixture` in `tests/` redraws the sample screenshot from `fixtures/sample-program.html`.
 `npm run table-fixture` redraws `fixtures/sample-table.png`, the made-up mat the table tests straighten.
+`fixtures/sample-table.heic` is the same picture saved as HEIC (made once with Python's `pillow-heif`), for
+the test that converts an iPhone-style photo in the browser.
 `npm run demo` re-records the animated demo at the top of the README, and `node make-social-preview.mjs`
 redraws `docs/social-preview.png`. Every test run also leaves fresh screenshots of the main screens in
 `tests/test-results/shots/<device>/` (`shots.spec.ts`, and `phone-tour.spec.ts` for the iPhone); the pictures in

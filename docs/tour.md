@@ -81,8 +81,8 @@ A repeat block drives four sides and four corners. The path stays on the mat wit
 
 For competition practice the floor can be a photo of the real table. Choose a photo, put a dot on each
 corner of the mat (a magnifier helps), and SPIKE Lab straightens it into a top-down floor at true size.
-A corner that the photo cut off can sit outside the picture. Only the straightened mat is kept; the photo
-itself never leaves the device.
+A corner that the photo cut off can sit outside the picture. iPhone photos (HEIC) work on any computer:
+the app converts them itself. Only the straightened mat is kept; the photo itself never leaves the device.
 
 ![The straightened mat in the mat editor, with a block placed on it](screenshots/table-editor.png)
 
