@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { CameraMode } from '@/core/project'
 import { ATTACHMENTS } from '@/core/robots'
 import { goalText } from '@/core/scene'
+import { missionComplete } from '@/core/timeline'
 import { formatLength, gridChoices, round, type DisplayUnit } from '@/core/units'
 import { useDismiss } from '@/lib/dismiss'
 import { usePhone } from '@/lib/phone'
@@ -12,6 +13,7 @@ import { SPEEDS, useLab } from '@/stores/lab'
 import { useSession } from '@/stores/session'
 import MoveReadout from './MoveReadout.vue'
 import ProgramPanel from './ProgramPanel.vue'
+import TaskChecklist from './TaskChecklist.vue'
 import SimViewport from './SimViewport.vue'
 
 const lab = useLab()
@@ -86,8 +88,11 @@ function step(dir: 1 | -1) {
 
 // tasteful celebration, only for a goal the simulation itself verified
 watch(finished, (done) => {
-  if (!done || !result.value?.goal) return
-  if (result.value.goal.met) {
+  if (!done || !result.value) return
+  // with practice pieces on the mat the whole checklist decides; otherwise the goal alone, as before
+  const hasList = result.value.tasks.length > 0
+  if (!hasList && !result.value.goal) return
+  if (hasList ? missionComplete(result.value.tasks) : result.value.goal!.met) {
     celebrate.value = true
     if (session.sound) blip('win')
     setTimeout(() => (celebrate.value = false), reducedMotion ? 1500 : 2600)
@@ -243,7 +248,8 @@ const confetti = Array.from({ length: 28 }, (_, i) => ({ left: (i * 37) % 100, d
 
     <!-- side: result, tinker, view options -->
     <aside class="scroll-y flex min-h-0 flex-col gap-2 lg:w-[26rem] lg:shrink-0" aria-label="Program and results">
-      <div v-if="goal" class="notice" :class="finished && result?.goal ? (result.goal.met ? 'notice-good' : 'notice-warn') : ''" data-testid="goal-banner">
+      <TaskChecklist v-if="lab.tasks.length" :finished="finished" />
+      <div v-else-if="goal" class="notice" :class="finished && result?.goal ? (result.goal.met ? 'notice-good' : 'notice-warn') : ''" data-testid="goal-banner">
         <p class="font-black">🎯 {{ goal }}</p>
         <p v-if="finished && result?.goal" class="font-bold" data-testid="goal-result">{{ result.goal.met ? '✅' : '🤔' }} {{ result.goal.text }} <span v-if="!result.goal.met">Change a number and try again!</span></p>
       </div>

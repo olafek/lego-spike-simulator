@@ -99,10 +99,46 @@ export async function touchTargets(page: Page, min = 44) {
       const r = el.getBoundingClientRect()
       if (r.width === 0 || r.height === 0) continue
       const style = getComputedStyle(el)
-      if (style.visibility === 'hidden' || style.display === 'none') continue
-      if (r.height < minSize - 0.5 || r.width < minSize - 0.5) out.push(`${el.getAttribute('data-testid') ?? el.textContent?.trim().slice(0, 20)} ${Math.round(r.width)}×${Math.round(r.height)}`)
+      if (style.visibility === "hidden" || style.display === "none") continue
+      // layout size, not the drawn size: a button that is being pressed shrinks a little while it animates
+      const w = el.offsetWidth || r.width
+      const h = el.offsetHeight || r.height
+      if (h < minSize - 0.5 || w < minSize - 0.5) out.push(`${el.getAttribute("data-testid") ?? el.textContent?.trim().slice(0, 20)} ${Math.round(w)}×${Math.round(h)}`)
     }
     return out
   }, min)
   expect(small, 'buttons smaller than 44px').toEqual([])
+}
+
+// ---- talking to the lab API from a test --------------------------------------------------------
+
+/** Call the lab API from inside the page (same session, with the CSRF token). */
+export async function labApi(page: Page, method: string, url: string, body?: unknown): Promise<any> {
+  return page.evaluate(
+    async ({ method, url, body }) => {
+      const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)![1])
+      const res = await fetch(url, {
+        method,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-XSRF-TOKEN': token },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      })
+      return res.json()
+    },
+    { method, url, body },
+  )
+}
+
+export const projectId = (page: Page) => page.url().match(/\/p\/([0-9a-f]{32})/)![1]
+
+/**
+ * Change the open project behind the scenes and reload it: a quick way to set up a mat, a tool and a program.
+ * `edit` gets the project document and changes it in place.
+ */
+export async function editProject(page: Page, edit: (data: any) => void): Promise<void> {
+  const id = projectId(page)
+  const project = await labApi(page, 'GET', `/api/projects/${id}`)
+  edit(project.data)
+  await labApi(page, 'PUT', `/api/projects/${id}`, { data: project.data })
+  await page.reload()
 }

@@ -10,7 +10,7 @@ import { newProjectData, parseProjectData, setMat, type ProjectData } from '@/co
 import { resolveRobot, ROBOT_BY_ID } from '@/core/robots'
 import { pictureFitsMat } from '@/core/scene'
 import { simulate, type SimResult } from '@/core/simulate'
-import { nextBoundary, prevBoundary, readout } from '@/core/timeline'
+import { nextBoundary, prevBoundary, readout, tasksAt } from '@/core/timeline'
 
 export { SPEEDS } from '@/lib/speed'
 
@@ -72,6 +72,8 @@ export const useLab = defineStore('lab', () => {
   const problems = computed(() => (data.value ? programProblems(data.value.program) : []))
   const errorCount = computed(() => new Set(problems.value.filter((p) => p.level === 'error').map((p) => p.blockId)).size)
   const measures = computed(() => (result.value ? readout(result.value, frameIndex.value) : null))
+  /** the checklist as it stands at the frame being shown (empty unless a practice piece has a task) */
+  const tasks = computed(() => (result.value && result.value.tasks.length ? tasksAt(result.value, frameIndex.value) : []))
   const activeBlocks = computed(() => new Set(frame.value?.active ?? []))
 
   // ---- loading & saving -------------------------------------------------------------------
@@ -468,6 +470,7 @@ export const useLab = defineStore('lab', () => {
     problems,
     errorCount,
     measures,
+    tasks,
     activeBlocks,
     reset,
     load,

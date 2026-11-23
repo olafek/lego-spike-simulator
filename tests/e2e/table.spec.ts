@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { addTablePicture, dragCorner, login, matPixel, openSample, TABLE_CORNERS, TABLE_PHOTO, TABLE_PHOTO_HEIC } from './helpers'
+import { addTablePicture, dragCorner, labApi, login, matPixel, openSample, projectId, TABLE_CORNERS, TABLE_PHOTO, TABLE_PHOTO_HEIC } from './helpers'
 
 // A photo of a table becomes the floor. The photo here is a generated picture of a made-up mat.
 
@@ -161,25 +161,6 @@ test('the table used last is offered first', async ({ page }) => {
 })
 
 // ---- review fixes -------------------------------------------------------------------------------
-
-/** Call the lab API from inside the page (same session, with the CSRF token). */
-async function labApi(page: Page, method: string, url: string, body?: unknown): Promise<any> {
-  return page.evaluate(
-    async ({ method, url, body }) => {
-      const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)![1])
-      const res = await fetch(url, {
-        method,
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-XSRF-TOKEN': token },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      })
-      return res.json()
-    },
-    { method, url, body },
-  )
-}
-
-const projectId = (page: Page) => page.url().match(/\/p\/([0-9a-f]{32})/)![1]
 
 test('removing the picture asks first', async ({ page }) => {
   await openMatStep(page)
