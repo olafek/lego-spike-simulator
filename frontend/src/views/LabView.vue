@@ -2,8 +2,10 @@
 import { computed, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { LabStep } from '@/core/project'
+import { usePhone } from '@/lib/phone'
 import { useLab } from '@/stores/lab'
 import CheckStep from '@/components/CheckStep.vue'
+import LabMenu from '@/components/LabMenu.vue'
 import MissionEditor from '@/components/MissionEditor.vue'
 import RobotStep from '@/components/RobotStep.vue'
 import SimulateStep from '@/components/SimulateStep.vue'
@@ -11,6 +13,7 @@ import RobotFace from '@/components/RobotFace.vue'
 
 const props = defineProps<{ id: string }>()
 const lab = useLab()
+const phone = usePhone()
 const route = useRoute()
 const router = useRouter()
 
@@ -59,10 +62,13 @@ onBeforeUnmount(() => {
     </div>
 
     <template v-else>
-      <div class="flex shrink-0 flex-wrap items-center gap-2 px-3 pb-2">
-        <input class="field h-11 min-h-11 max-w-64 flex-1 font-extrabold" :value="lab.name" aria-label="Project name" maxlength="80" data-testid="project-name" @change="lab.rename(($event.target as HTMLInputElement).value)" />
-        <span class="chip" :class="lab.saveState === 'error' ? 'chip-flag' : ''" role="status" data-testid="save-state">{{ lab.saveState === 'saved' ? '✓ saved' : lab.saveState === 'saving' ? 'saving…' : '⚠️ not saved' }}</span>
-        <button v-if="lab.saveState === 'error'" class="btn btn-ghost btn-sm" @click="lab.saveNow()">Try saving again</button>
+      <div class="relative flex shrink-0 flex-wrap items-center gap-2 px-3 pb-2 max-sm:pt-2">
+        <LabMenu v-if="phone" />
+        <template v-else>
+          <input class="field h-11 min-h-11 max-w-64 flex-1 font-extrabold" :value="lab.name" aria-label="Project name" maxlength="80" data-testid="project-name" @change="lab.rename(($event.target as HTMLInputElement).value)" />
+          <span class="chip" :class="lab.saveState === 'error' ? 'chip-flag' : ''" role="status" data-testid="save-state">{{ lab.saveText }}</span>
+          <button v-if="lab.saveState === 'error'" class="btn btn-ghost btn-sm" @click="lab.saveNow()">Try saving again</button>
+        </template>
         <nav class="ml-auto flex gap-1" aria-label="Steps">
           <button
             v-for="(s, i) in steps"
@@ -77,6 +83,10 @@ onBeforeUnmount(() => {
           </button>
         </nav>
       </div>
+      <p v-if="phone && lab.saveState === 'error'" class="notice notice-warn mx-3 mb-2 flex flex-wrap items-center gap-2 font-bold" role="alert" data-testid="save-warning">
+        ⚠️ Not saved.
+        <button class="btn btn-ghost btn-sm" @click="lab.saveNow()">Try saving again</button>
+      </p>
       <p v-if="lab.loadError" class="notice notice-warn mx-3 mb-2 font-bold" role="alert">{{ lab.loadError }}</p>
 
       <div class="min-h-0 flex-1">

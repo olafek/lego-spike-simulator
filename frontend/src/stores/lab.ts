@@ -37,6 +37,7 @@ export const useLab = defineStore('lab', () => {
   const loading = ref(false)
   const loadError = ref<string | null>(null)
   const saveState = ref<'saved' | 'saving' | 'error'>('saved')
+  const saveText = computed(() => (saveState.value === 'saved' ? '✓ saved' : saveState.value === 'saving' ? 'saving…' : '⚠️ not saved'))
 
   const result = shallowRef<SimResult | null>(null)
   const cursor = ref(0) // fractional frame index
@@ -387,6 +388,7 @@ export const useLab = defineStore('lab', () => {
     loading,
     loadError,
     saveState,
+    saveText,
     result,
     cursor,
     playing,
