@@ -196,6 +196,8 @@ interface Obj {
   ax: number
   ay: number
   travel: number
+  /** push bar: how far it can travel before it reaches the end of its rail or something fixed (-1 = not worked out yet) */
+  room: number
   /** pull ring: distance travelled on the hook */
   pulled: number
   /** press plate: its front face was touched */
@@ -312,6 +314,7 @@ class Simulator {
         ax: Math.sin(so.rot * DEG),
         ay: Math.cos(so.rot * DEG),
         travel: 0,
+        room: -1,
         pulled: 0,
         pressed: false,
         touched: false,
@@ -1024,7 +1027,7 @@ class Simulator {
             if (!m) continue
             if (ob.def.kit === 'push') {
               // a push bar only slides forwards along its rail, and only to the end of it
-              const d = Math.max(0, Math.min(KIT.push.travelMm - ob.travel, m.x * ob.ax + m.y * ob.ay))
+              const d = Math.max(0, Math.min(this.railRoom(ob) - ob.travel, m.x * ob.ax + m.y * ob.ay))
               if (d > 1e-9) {
                 ob.x += ob.ax * d
                 ob.y += ob.ay * d
@@ -1096,9 +1099,27 @@ class Simulator {
           }
         }
       }
+      if (!jam) {
+        // a push bar never passes through a loose thing that is pinned against something else
+        pinned: for (const bar of movables) {
+          if (bar.def.kit !== 'push') continue
+          for (const ob of movables) {
+            if (ob === bar || ob.def.kit === 'push') continue
+            const m = mtv(this.objShape(bar), this.objShape(ob))
+            if (m && Math.hypot(m.x, m.y) > 0.5) {
+              jam = true
+              break pinned
+            }
+          }
+        }
+      }
       if (jam && next !== prev) {
+        // what the robot ran into was touched, even though the robot is put back a step
+        this.probeKit(shapes)
         // the wheels keep turning (slipping) but the robot and everything it pushed stay put
         this.objects.forEach((ob, i) => {
+          // a bar that reached the end of its rail stays there: it was pushed all the way
+          if (ob.def.kit === 'push' && ob.travel > saved[i][2] && ob.travel >= this.railRoom(ob) - 1e-6) return
           ob.x = saved[i][0]
           ob.y = saved[i][1]
           ob.travel = saved[i][2]
@@ -1123,7 +1144,11 @@ class Simulator {
       if (!ob.carriedBy) continue
       const a = this.atts.find((x) => x.uid === ob.carriedBy)!
       const w = toWorld(this.pose, ob.lx, ob.ly)
-      if (ob.def.kit === 'pull') ob.pulled += Math.hypot(w.x - ob.x, w.y - ob.y)
+      if (ob.def.kit === 'pull') {
+        // pulling = the ring moving towards the robot's rear. Pushing it ahead or swinging it round is not.
+        const back = -((w.x - ob.x) * Math.sin(this.pose.h) + (w.y - ob.y) * Math.cos(this.pose.h))
+        if (back > 0) ob.pulled += back
+      }
       ob.x = w.x
       ob.y = w.y
       ob.rot = this.pose.h + ob.lrot
@@ -1135,6 +1160,21 @@ class Simulator {
   }
 
   // ---- practice kit ------------------------------------------------------------------------
+
+  /** How far a push bar can travel: to the end of its rail, or until it would touch something fixed. */
+  railRoom(ob: Obj): number {
+    if (ob.room >= 0) return ob.room
+    const x0 = ob.x - ob.ax * ob.travel
+    const y0 = ob.y - ob.ay * ob.travel
+    let room = 0
+    for (let t = 0.5; t <= KIT.push.travelMm + 1e-9; t += 0.5) {
+      const shape = boxShape(x0 + ob.ax * t, y0 + ob.ay * t, ob.w, ob.l, ob.rot)
+      if (this.statics.some((st) => overlaps(st, shape))) break
+      room = t
+    }
+    ob.room = room
+    return room
+  }
 
   /** A hook catches a free pull ring as soon as its tip area reaches it (simplified: it cannot let go). */
   catchRings(next: Pose): void {
@@ -1161,9 +1201,9 @@ class Simulator {
   }
 
   /** After the robot has moved: was a press plate touched on its front, or a "do not touch" block touched at all? */
-  probeKit(): void {
+  probeKit(at: Shape[] | null = null): void {
     if (!this.kitProbes) return
-    let shapes: Shape[] | null = null
+    let shapes: Shape[] | null = at
     for (const ob of this.objects) {
       if (!ob.task) continue
       let probe: Shape | null = null
