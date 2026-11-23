@@ -7,11 +7,11 @@
 // Nothing here knows about Vue, Three.js or the network.
 
 import { BLOCK_BY_OP, COLOR_REFLECTION, type ColorName } from './catalog'
-import { captureZone, clawAngleForGap, clawGap, isRaised, liftHeight, toolRects } from './attachmentGeometry'
+import { captureZone, clawAngleForGap, clawGap, hookSeat, hookZone, isRaised, liftHeight, toolRects } from './attachmentGeometry'
 import { boxShape, circleShape, mtv, overlaps, pointInShape, raycast, rectShape, toLocal, toWorld, type Pose, type Shape } from './geometry'
 import { blockText, programProblems, type Block, type Condition, type Expr, type Program } from './ir'
 import { ATTACHMENTS, wheelCircumferenceMm, type AttachmentInstance, type RobotConfig } from './robots'
-import { isWalled, matBounds, OBJECT_DEFS, objectSize, type ObjectDef, type Scene } from './scene'
+import { hasTask, isWalled, KIT, matBounds, OBJECT_DEFS, objectSize, targetOf, type ObjectDef, type Scene } from './scene'
 
 export { matBounds }
 import { DEG, MM_PER_CM, MM_PER_INCH, wrapDeg180 } from './units'
@@ -32,6 +32,19 @@ export interface SimOptions {
   slip: number
   /** the floor shows a straightened photo of a table (display only; it is named among the assumptions) */
   floorPicture: boolean
+}
+
+/** Shown with every run that has a practice piece on the mat. */
+export const KIT_NOTE = 'Practice pieces are simple stand-ins. Real mission models move differently.'
+
+/** The goal as a checklist row. */
+function goalWords(scene: Scene, objects: { id: string; def: ObjectDef }[]): string {
+  const g = scene.goal
+  if (!g) return ''
+  const zone = objects.find((o) => o.id === g.zoneId)?.def.label.toLowerCase() ?? 'target'
+  if (g.type === 'robot_in_zone') return `Park the robot on the ${zone}`
+  const thing = objects.find((o) => o.id === g.objectId)?.def.label.toLowerCase() ?? 'thing'
+  return `Get the ${thing} onto the ${zone}`
 }
 
 /** Shown with every run on a photographed table. */
@@ -106,6 +119,24 @@ export interface SimEvent {
   blockId?: string
 }
 
+/** One row of the checklist: something a practice piece (or the goal) asks of the robot. */
+export interface TaskResult {
+  /** the id of the piece on the mat, or 'goal' */
+  id: string
+  text: string
+  /** 'do' = push / press / pull, 'avoid' = do not touch, 'goal' = the mission goal */
+  kind: 'do' | 'avoid' | 'goal'
+  met: boolean
+}
+
+/** A task became met (or not met) at this frame. Kept beside the frames, so the frames stay as they were. */
+export interface TaskChange {
+  frame: number
+  /** index into SimResult.tasks */
+  task: number
+  met: boolean
+}
+
 export interface SimResult {
   frames: Frame[]
   dt: number
@@ -120,6 +151,10 @@ export interface SimResult {
   /** true when the distances are exact for the ideal geometry (no slip, calibrated wheels) */
   exact: boolean
   goal: { met: boolean; text: string } | null
+  /** the checklist at the end of the run; empty unless a practice piece on the mat has a task */
+  tasks: TaskResult[]
+  /** when each task was ticked or un-ticked, in frame order */
+  taskChanges: TaskChange[]
   movementPorts: { left: string; right: string }
 }
 
@@ -152,6 +187,21 @@ interface Obj {
   lrot: number
   surface: ColorName | undefined
   grabSize: number
+  // ---- practice kit ----
+  /** this piece asks something of the robot */
+  task: boolean
+  /** push bar: how far it must travel; pull ring: how far it must be pulled (mm) */
+  target: number
+  /** push bar: unit vector of its rail, and how far it has travelled along it */
+  ax: number
+  ay: number
+  travel: number
+  /** pull ring: distance travelled on the hook */
+  pulled: number
+  /** press plate: its front face was touched */
+  pressed: boolean
+  /** "do not touch" block: the robot touched it */
+  touched: boolean
 }
 
 interface Thread {
@@ -207,6 +257,11 @@ class Simulator {
   events: SimEvent[] = []
   warnings = new Set<string>()
   assumptions: string[] = []
+  tasks: TaskResult[] = []
+  taskChanges: TaskChange[] = []
+  /** the piece behind each task row (undefined for the goal row) */
+  private taskObjs: Obj[] = []
+  private kitProbes = false
   private lastObjs: ObjState[] = []
   private lastVars: Record<string, number> = {}
 
@@ -252,9 +307,18 @@ class Simulator {
         lrot: 0,
         surface: so.surface ?? def.surface,
         grabSize: def.shape === 'circle' ? s.r * 2 : Math.min(s.w, s.l),
+        task: hasTask(so),
+        target: targetOf(so),
+        ax: Math.sin(so.rot * DEG),
+        ay: Math.cos(so.rot * DEG),
+        travel: 0,
+        pulled: 0,
+        pressed: false,
+        touched: false,
       })
     }
     for (const ob of this.objects) if (ob.def.solid && !ob.def.movable) this.statics.push(this.objShape(ob))
+    this.buildTasks()
     const bounds = matBounds(setup.scene.mat)
     if (bounds) {
       const { x0, x1, y0, y1 } = bounds
@@ -325,6 +389,12 @@ class Simulator {
       const j = this.joints[a.uid] ?? 0
       if (isRaised(a, j)) continue
       for (const r of toolRects(this.robot, a, j)) shapes.push(rectShape(p, r.x0, r.x1, r.y0, r.y1))
+    }
+    // a ring on the hook is part of the robot: it cannot be dragged through a wall
+    for (const ob of this.objects) {
+      if (!ob.carriedBy || ob.def.kit !== 'pull') continue
+      const w = toWorld(p, ob.lx, ob.ly)
+      shapes.push(circleShape(w.x, w.y, ob.r))
     }
     return shapes
   }
@@ -927,10 +997,12 @@ class Simulator {
       }
     }
 
+    this.catchRings(next)
+
     const moving = this.objects.some((ob) => ob.vx !== 0 || ob.vy !== 0)
     this.blocked = false
     if (next !== prev || moving) {
-      const saved = this.objects.map((ob) => [ob.x, ob.y] as const)
+      const saved = this.objects.map((ob) => [ob.x, ob.y, ob.travel] as const)
       // rolling objects
       for (const ob of this.objects) {
         if (ob.carriedBy || (ob.vx === 0 && ob.vy === 0)) continue
@@ -950,6 +1022,17 @@ class Simulator {
           for (const rs of shapes) {
             const m = mtv(rs, this.objShape(ob))
             if (!m) continue
+            if (ob.def.kit === 'push') {
+              // a push bar only slides forwards along its rail, and only to the end of it
+              const d = Math.max(0, Math.min(KIT.push.travelMm - ob.travel, m.x * ob.ax + m.y * ob.ay))
+              if (d > 1e-9) {
+                ob.x += ob.ax * d
+                ob.y += ob.ay * d
+                ob.travel += d
+                any = true
+              }
+              continue
+            }
             ob.x += m.x
             ob.y += m.y
             if (ob.def.rolls) {
@@ -963,6 +1046,21 @@ class Simulator {
           for (let j = i + 1; j < movables.length; j++) {
             const m = mtv(this.objShape(movables[i]), this.objShape(movables[j]))
             if (!m) continue
+            // a push bar is not moved by other things: the other thing gives way
+            const railI = movables[i].def.kit === 'push'
+            const railJ = movables[j].def.kit === 'push'
+            if (railI || railJ) {
+              if (railI && railJ) continue
+              if (railI) {
+                movables[j].x += m.x
+                movables[j].y += m.y
+              } else {
+                movables[i].x -= m.x
+                movables[i].y -= m.y
+              }
+              any = true
+              continue
+            }
             movables[i].x -= m.x / 2
             movables[i].y -= m.y / 2
             movables[j].x += m.x / 2
@@ -971,6 +1069,7 @@ class Simulator {
           }
         }
         for (const ob of movables) {
+          if (ob.def.kit === 'push') continue // held by its rail
           for (const st of this.statics) {
             const m = mtv(st, this.objShape(ob))
             if (!m) continue
@@ -1002,6 +1101,7 @@ class Simulator {
         this.objects.forEach((ob, i) => {
           ob.x = saved[i][0]
           ob.y = saved[i][1]
+          ob.travel = saved[i][2]
           ob.vx = 0
           ob.vy = 0
         })
@@ -1023,13 +1123,100 @@ class Simulator {
       if (!ob.carriedBy) continue
       const a = this.atts.find((x) => x.uid === ob.carriedBy)!
       const w = toWorld(this.pose, ob.lx, ob.ly)
+      if (ob.def.kit === 'pull') ob.pulled += Math.hypot(w.x - ob.x, w.y - ob.y)
       ob.x = w.x
       ob.y = w.y
       ob.rot = this.pose.h + ob.lrot
       ob.z = a.kind === 'lift_arm' ? liftHeight(a, this.joints[a.uid]) : 0
       this.objsDirty = true
     }
+    this.probeKit()
     this.t += dt
+  }
+
+  // ---- practice kit ------------------------------------------------------------------------
+
+  /** A hook catches a free pull ring as soon as its tip area reaches it (simplified: it cannot let go). */
+  catchRings(next: Pose): void {
+    for (const a of this.atts) {
+      if (a.kind !== 'hook') continue
+      if (this.objects.some((ob) => ob.carriedBy === a.uid)) continue
+      const z = hookZone(this.robot, a)
+      const zone = rectShape(next, z.x0, z.x1, z.y0, z.y1)
+      const ring = this.objects.find((ob) => ob.def.kit === 'pull' && !ob.carriedBy && overlaps(zone, this.objShape(ob)))
+      if (!ring) continue
+      const seat = hookSeat(this.robot, a)
+      const w = toWorld(this.pose, seat.x, seat.y)
+      ring.carriedBy = a.uid
+      ring.lx = seat.x
+      ring.ly = seat.y
+      ring.lrot = 0
+      ring.x = w.x
+      ring.y = w.y
+      ring.vx = 0
+      ring.vy = 0
+      this.objsDirty = true
+      this.info('The hook caught the ring (simplified: it stays on the hook).')
+    }
+  }
+
+  /** After the robot has moved: was a press plate touched on its front, or a "do not touch" block touched at all? */
+  probeKit(): void {
+    if (!this.kitProbes) return
+    let shapes: Shape[] | null = null
+    for (const ob of this.objects) {
+      if (!ob.task) continue
+      let probe: Shape | null = null
+      if (ob.def.kit === 'press' && !ob.pressed) {
+        // a thin strip just in front of the plate's front face (its local -y side)
+        probe = rectShape({ x: ob.x, y: ob.y, h: ob.rot }, -ob.w / 2 + 4, ob.w / 2 - 4, -ob.l / 2 - 3, -ob.l / 2 + 1)
+      } else if (ob.def.type === 'obstacle' && !ob.touched) {
+        probe = boxShape(ob.x, ob.y, ob.w + 4, ob.l + 4, ob.rot)
+      }
+      if (!probe) continue
+      shapes ??= this.robotShapes(this.pose)
+      if (!shapes.some((rs) => overlaps(rs, probe!))) continue
+      if (ob.def.kit === 'press') ob.pressed = true
+      else ob.touched = true
+    }
+  }
+
+  /** The checklist: one row per practice piece that asks something, then the goal. Empty without such a piece. */
+  buildTasks(): void {
+    const rows = this.objects.filter((ob) => ob.task)
+    if (rows.length === 0) return
+    const words: Record<string, string> = { push: 'Push the bar in', press: 'Press the plate', pull: 'Pull the ring out', avoid: 'Do not touch the block' }
+    const keyOf = (ob: Obj) => ob.def.kit ?? 'avoid'
+    const total: Record<string, number> = {}
+    for (const ob of rows) total[keyOf(ob)] = (total[keyOf(ob)] ?? 0) + 1
+    const seen: Record<string, number> = {}
+    for (const ob of rows) {
+      const key = keyOf(ob)
+      seen[key] = (seen[key] ?? 0) + 1
+      this.tasks.push({ id: ob.id, text: total[key] > 1 ? `${words[key]} (${seen[key]})` : words[key], kind: key === 'avoid' ? 'avoid' : 'do', met: false })
+      this.taskObjs.push(ob)
+    }
+    this.kitProbes = rows.some((ob) => ob.def.kit === 'press' || ob.def.type === 'obstacle')
+    const goal = this.checkGoal()
+    if (goal) this.tasks.push({ id: 'goal', text: goalWords(this.scene, this.objects), kind: 'goal', met: false })
+  }
+
+  /** Called once per frame: note every task that changed. Push, press and pull stay ticked once earned. */
+  updateTasks(frame: number): void {
+    for (let i = 0; i < this.tasks.length; i++) {
+      const row = this.tasks[i]
+      const ob = this.taskObjs[i]
+      let met: boolean
+      if (!ob) met = this.checkGoal()?.met ?? false
+      else if (ob.def.kit === 'push') met = row.met || ob.travel >= ob.target - 1e-6
+      else if (ob.def.kit === 'press') met = ob.pressed
+      else if (ob.def.kit === 'pull') met = row.met || ob.pulled >= ob.target - 1e-6
+      else met = !ob.touched
+      if (met === row.met && frame > 0) continue
+      if (met === row.met && !met) continue // not met at the start: nothing to note
+      row.met = met
+      this.taskChanges.push({ frame, task: i, met })
+    }
   }
 
   record(): void {
@@ -1064,6 +1251,7 @@ class Simulator {
       sensors,
       yaw: this.yaw(),
     })
+    if (this.tasks.length) this.updateTasks(this.frames.length - 1)
   }
 
   run(): SimResult {
@@ -1128,6 +1316,7 @@ class Simulator {
 
   result(status: SimResult['status'], reason: string): SimResult {
     const notes = [...this.assumptions]
+    if (this.objects.some((ob) => ob.def.kit)) notes.push(KIT_NOTE)
     if (this.o.floorPicture) notes.push(FLOOR_PICTURE_NOTE)
     const calibrated = Math.abs(this.motorRotationMm - this.circ) / this.circ < 0.0005
     if (!calibrated) {
@@ -1147,6 +1336,8 @@ class Simulator {
       assumptions: notes,
       exact: calibrated && this.o.slip === 0,
       goal: this.checkGoal(),
+      tasks: this.tasks.map((t) => ({ ...t })),
+      taskChanges: this.taskChanges,
       movementPorts: { ...this.pair },
     }
   }

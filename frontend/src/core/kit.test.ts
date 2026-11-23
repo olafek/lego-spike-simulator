@@ -20,7 +20,7 @@ const backward = (cm: number) => blk('move_for', { direction: 'backward', amount
 const hook: AttachmentInstance = { uid: 'tool', kind: 'hook', port: null }
 const ram: AttachmentInstance = { uid: 'tool', kind: 'custom', port: null, widthMm: 100, lengthMm: 60 }
 
-function run(blocks: Block[], objects: SceneObject[], over: Partial<SimSetup> & { scene?: Partial<Scene> } = {}): SimResult {
+function run(blocks: Block[], objects: SceneObject[], over: Omit<Partial<SimSetup>, 'scene'> & { scene?: Partial<Scene> } = {}): SimResult {
   const { scene, ...rest } = over
   return simulate({ program: prog(...blocks), robot: resolveRobot('db1'), attachments: [], ...rest, scene: { ...emptyScene(), objects, ...scene } })
 }

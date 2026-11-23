@@ -1,6 +1,6 @@
 // Read-only helpers over a SimResult: stepping boundaries and child-facing measurements.
 
-import type { Frame, SimResult, Span } from './simulate'
+import type { Frame, SimResult, Span, TaskResult } from './simulate'
 import { DEG } from './units'
 
 /** Frame indices where an instruction starts, plus the final frame. */
@@ -98,4 +98,19 @@ export function readout(r: SimResult, i: number): Readout {
 /** How many whole major grid cells the robot centre crossed along its straight path. */
 export function cellsCovered(distanceMm: number, majorMm: number): number {
   return distanceMm / majorMm
+}
+
+/** The checklist as it stood at a frame (stepping back un-ticks what was ticked later). */
+export function tasksAt(r: SimResult, frame: number): TaskResult[] {
+  const rows = r.tasks.map((t) => ({ ...t, met: false }))
+  for (const c of r.taskChanges) {
+    if (c.frame > frame) break
+    rows[c.task].met = c.met
+  }
+  return rows
+}
+
+/** Everything is done, and at least one thing was something to do (not only "do not touch"). */
+export function missionComplete(tasks: TaskResult[]): boolean {
+  return tasks.length > 0 && tasks.every((t) => t.met) && tasks.some((t) => t.kind !== 'avoid')
 }
