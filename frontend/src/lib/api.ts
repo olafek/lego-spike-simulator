@@ -102,6 +102,12 @@ export interface ScreenshotInfo {
   mime: string
 }
 
+export interface MatImageInfo {
+  id: string
+  url: string
+  width: number
+  height: number
+}
 export interface ProjectSummary {
   id: string
   name: string
@@ -109,6 +115,9 @@ export interface ProjectSummary {
   screenshotCount: number
   firstScreenshotUrl: string | null
   summary: string | null
+  /** a saved table (made once, copied onto programs) */
+  table: boolean
+  matImageUrl: string | null
 }
 
 export interface ProjectRecord {
@@ -116,6 +125,9 @@ export interface ProjectRecord {
   name: string
   data: unknown
   screenshots: ScreenshotInfo[]
+  /** the straightened photo of a table used as the floor, if any */
+  matImage: MatImageInfo | null
+  table: boolean
   createdAt: string
   updatedAt: string
 }
@@ -137,6 +149,12 @@ export const api = {
     if (replaces) fd.append('replaces', replaces)
     return request<ScreenshotInfo>('POST', `/api/projects/${id}/screenshots`, fd)
   },
+  uploadMatImage: (id: string, picture: Blob) => {
+    const fd = new FormData()
+    fd.append('image', picture, 'table.jpg')
+    return request<MatImageInfo>('POST', `/api/projects/${id}/mat-image`, fd)
+  },
+  deleteMatImage: (id: string) => request<unknown>('DELETE', `/api/projects/${id}/mat-image`),
   orderScreenshots: (id: string, ids: string[]) => request<ScreenshotInfo[]>('PUT', `/api/projects/${id}/screenshots/order`, { ids }),
   deleteScreenshot: (id: string, sid: string) => request<unknown>('DELETE', `/api/projects/${id}/screenshots/${sid}`),
   recognise: (id: string, screenshotIds?: string[]) =>

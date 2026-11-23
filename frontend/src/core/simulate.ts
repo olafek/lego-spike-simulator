@@ -30,9 +30,14 @@ export interface SimOptions {
   calibration: 'ideal' | 'hardware'
   /** fraction of wheel travel lost to slip (0 = ideal). Any value > 0 makes distances "estimated". */
   slip: number
+  /** the floor shows a straightened photo of a table (display only; it is named among the assumptions) */
+  floorPicture: boolean
 }
 
-export const DEFAULT_OPTIONS: SimOptions = { dt: 0.01, maxSeconds: 60, waitTimeoutSeconds: 20, calibration: 'ideal', slip: 0 }
+/** Shown with every run on a photographed table. */
+export const FLOOR_PICTURE_NOTE = 'The floor picture is a straightened photo. Places on it are approximate.'
+
+export const DEFAULT_OPTIONS: SimOptions = { dt: 0.01, maxSeconds: 60, waitTimeoutSeconds: 20, calibration: 'ideal', slip: 0, floorPicture: false }
 
 export interface SimSetup {
   program: Program
@@ -1123,6 +1128,7 @@ class Simulator {
 
   result(status: SimResult['status'], reason: string): SimResult {
     const notes = [...this.assumptions]
+    if (this.o.floorPicture) notes.push(FLOOR_PICTURE_NOTE)
     const calibrated = Math.abs(this.motorRotationMm - this.circ) / this.circ < 0.0005
     if (!calibrated) {
       notes.push(

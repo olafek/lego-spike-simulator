@@ -2,7 +2,7 @@
 
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
-import { api, ApiError, type ScreenshotInfo } from '@/lib/api'
+import { api, ApiError, type MatImageInfo, type ScreenshotInfo } from '@/lib/api'
 import { rememberProject } from '@/lib/recent'
 import { BLOCK_BY_OP } from '@/core/catalog'
 import { cloneBlock, makeBlock, newId, normaliseRecognition, programProblems, RecognitionError, type Block, type ParamValue, type Program } from '@/core/ir'
@@ -34,6 +34,10 @@ export const useLab = defineStore('lab', () => {
   const name = ref('')
   const data = ref<ProjectData | null>(null)
   const screenshots = ref<ScreenshotInfo[]>([])
+  /** the straightened photo of a table shown as the floor (display only) */
+  const matImage = ref<MatImageInfo | null>(null)
+  /** this project is a saved table */
+  const isTable = ref(false)
   const loading = ref(false)
   const loadError = ref<string | null>(null)
   const saveState = ref<'saved' | 'saving' | 'error'>('saved')
@@ -70,6 +74,8 @@ export const useLab = defineStore('lab', () => {
     name.value = ''
     data.value = null
     screenshots.value = []
+    matImage.value = null
+    isTable.value = false
     result.value = null
     cursor.value = 0
     selectedBlockId.value = null
@@ -86,6 +92,8 @@ export const useLab = defineStore('lab', () => {
       id.value = rec.id
       name.value = rec.name
       screenshots.value = [...rec.screenshots].sort((a, b) => a.position - b.position)
+      matImage.value = rec.matImage ?? null
+      isTable.value = !!rec.table
       try {
         data.value = rec.data ? parseProjectData(rec.data) : newProjectData()
       } catch {
@@ -145,7 +153,7 @@ export const useLab = defineStore('lab', () => {
       robot: robot.value,
       attachments: JSON.parse(JSON.stringify(d.attachments)),
       scene: JSON.parse(JSON.stringify(d.scene)),
-      options: { calibration: d.settings.calibration, slip: d.settings.slip, maxSeconds: d.settings.maxSeconds },
+      options: { calibration: d.settings.calibration, slip: d.settings.slip, maxSeconds: d.settings.maxSeconds, floorPicture: !!matImage.value },
     })
     cursor.value = 0
     runCount.value += 1
@@ -330,6 +338,21 @@ export const useLab = defineStore('lab', () => {
     return shot
   }
 
+  // ---- table picture ----------------------------------------------------------------------
+
+  async function setMatPicture(picture: Blob): Promise<void> {
+    if (!id.value) throw new Error('No project')
+    matImage.value = await api.uploadMatImage(id.value, picture)
+    resimulate(false)
+  }
+
+  async function removeMatPicture(): Promise<void> {
+    if (!id.value) return
+    await api.deleteMatImage(id.value)
+    matImage.value = null
+    resimulate(false)
+  }
+
   async function deleteScreenshot(sid: string): Promise<void> {
     if (!id.value) return
     await api.deleteScreenshot(id.value, sid)
@@ -385,6 +408,10 @@ export const useLab = defineStore('lab', () => {
     name,
     data,
     screenshots,
+    matImage,
+    isTable,
+    setMatPicture,
+    removeMatPicture,
     loading,
     loadError,
     saveState,

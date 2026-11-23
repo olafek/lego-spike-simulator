@@ -21,6 +21,8 @@ export interface RendererSetup {
   attachments: AttachmentInstance[]
   scene: Scene
   settings: ProjectSettings
+  /** a straightened photo of a table, drawn on the floor of a walled mat */
+  matImageUrl?: string | null
 }
 
 export interface RendererOptions {
@@ -213,7 +215,7 @@ export class SceneRenderer {
     this.setup = s
     const robotKey = JSON.stringify([s.robot, s.attachments])
     const sceneKey = JSON.stringify([s.scene.objects, s.scene.start])
-    const gridKey = JSON.stringify([s.settings.gridMajorMm, s.settings.gridMinorMm, s.settings.unit, s.settings.gridLabels, s.scene.mat, s.scene.floor])
+    const gridKey = JSON.stringify([s.settings.gridMajorMm, s.settings.gridMinorMm, s.settings.unit, s.settings.gridLabels, s.scene.mat, s.scene.floor, s.matImageUrl ?? null])
     const markKey = JSON.stringify([s.settings.trail, s.settings.distanceMarkers, s.settings.gridMajorMm, s.settings.unit, s.scene.start, s.robot.chassis, s.robot.trackWidthMm, s.robot.wheelWidthMm])
     if (gridKey !== this.gridKey) {
       this.gridKey = gridKey
@@ -636,6 +638,7 @@ export class SceneRenderer {
     const { gridMajorMm: major, gridMinorMm: minor, unit } = s.settings
     const bounds = matBounds(s.scene.mat)
     const classroom = bounds !== null
+    const onPicture = classroom && !!s.matImageUrl
     const ext = bounds ?? { x0: -3000, x1: 3000, y0: -3000, y1: 3000 }
     const floorColor = s.scene.floor === 'white' ? C.floor : new THREE.Color(COLOR_HEX[s.scene.floor as ColorName] ?? '#eef1fb').lerp(new THREE.Color(0xffffff), 0.35).getHex()
 
@@ -647,7 +650,25 @@ export class SceneRenderer {
     }
     if (classroom) {
       this.gridG.add(flat(20000, 20000, C.outside, -2))
-      this.gridG.add(flat(ext.x1 - ext.x0, ext.y1 - ext.y0, floorColor, -1, (ext.x0 + ext.x1) / 2, (ext.y0 + ext.y1) / 2))
+      const matFloor = flat(ext.x1 - ext.x0, ext.y1 - ext.y0, floorColor, -1, (ext.x0 + ext.x1) / 2, (ext.y0 + ext.y1) / 2)
+      this.gridG.add(matFloor)
+      if (s.matImageUrl) {
+        // the photo of the table replaces the plain floor once it has loaded
+        const url = s.matImageUrl
+        new THREE.TextureLoader().load(url, (texture) => {
+          if (this.setup?.matImageUrl !== url || matFloor.parent !== this.gridG) {
+            texture.dispose()
+            return
+          }
+          texture.colorSpace = THREE.SRGBColorSpace
+          texture.anisotropy = 8
+          const material = matFloor.material as THREE.MeshBasicMaterial
+          material.map = texture
+          material.color.set(0xffffff)
+          material.needsUpdate = true
+          this.requestRender()
+        })
+      }
       const wallMat = new THREE.MeshLambertMaterial({ color: 0x5a6388 })
       const t = 20
       const wall = (cx: number, cy: number, w: number, l: number) => {
@@ -677,9 +698,9 @@ export class SceneRenderer {
     const majorY = gridLines(ext.y0, ext.y1, major)
     const minorX = gridLines(ext.x0, ext.x1, minor).filter((x) => !isMultiple(x, major))
     const minorY = gridLines(ext.y0, ext.y1, minor).filter((y) => !isMultiple(y, major))
-    this.minorLines = new THREE.LineSegments(segs(minorX, minorY), new THREE.LineBasicMaterial({ color: C.minor }))
+    this.minorLines = new THREE.LineSegments(segs(minorX, minorY), new THREE.LineBasicMaterial({ color: C.minor, transparent: onPicture, opacity: onPicture ? 0.35 : 1 }))
     this.gridG.add(this.minorLines)
-    const majorLines = new THREE.LineSegments(segs(majorX, majorY), new THREE.LineBasicMaterial({ color: C.major }))
+    const majorLines = new THREE.LineSegments(segs(majorX, majorY), new THREE.LineBasicMaterial({ color: C.major, transparent: onPicture, opacity: onPicture ? 0.5 : 1 }))
     majorLines.position.y = 0.1
     this.gridG.add(majorLines)
 

@@ -7,7 +7,8 @@
     "test:headed": "playwright test --headed",
     "fixture": "node make-fixture.mjs",
     "install-browsers": "playwright install chromium webkit",
-    "demo": "node make-demo-gif.mjs"
+    "demo": "node make-demo-gif.mjs",
+    "table-fixture": "node make-table-fixture.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

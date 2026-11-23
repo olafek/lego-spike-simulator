@@ -16,6 +16,7 @@ import { DEG, MM_PER_INCH, mmToDisplay, round } from '@/core/units'
 import { api, ApiError } from '@/lib/api'
 import { useLab } from '@/stores/lab'
 import { useSession } from '@/stores/session'
+import MatPicturePanel from './MatPicturePanel.vue'
 
 const lab = useLab()
 const session = useSession()
@@ -133,6 +134,8 @@ const labelValue = (mm: number) => String(round(mmToDisplay(mm, unit.value), uni
 const isLabelled = (mm: number) => Math.round(mm / major.value) % labelEvery.value === 0
 const legend = computed(() => `1 square = ${round(mmToDisplay(major.value, unit.value), 1)} ${unit.value}`)
 const mat = computed(() => (scene.value ? matBounds(scene.value.mat) : null))
+/** grid lines are fainter over a picture, so the picture stays readable */
+const lineOpacity = computed(() => (lab.matImage ? 0.4 : 1))
 
 // ---- selection & dragging -------------------------------------------------------------------
 
@@ -474,10 +477,12 @@ const selectedName = computed(() => (selected.value === 'robot' ? 'Robot start' 
           <rect :x="x0" :y="-y1" :width="view.w" :height="viewH" fill="#eef1fb" @pointerdown="startPan" @pointermove="movePan" @pointerup="pan = null" @pointercancel="pan = null" />
           <g pointer-events="none">
             <rect v-if="mat" :x="mat.x0" :y="-mat.y1" :width="mat.x1 - mat.x0" :height="mat.y1 - mat.y0" fill="#ffffff" stroke="#5b6694" :stroke-width="px(4)" />
-            <line v-for="v in minorX" :key="'mx' + v" :x1="v" :x2="v" :y1="-y1" :y2="-y0" stroke="#d3d9ee" :stroke-width="px(1)" />
-            <line v-for="v in minorY" :key="'my' + v" :y1="-v" :y2="-v" :x1="x0" :x2="x0 + view.w" stroke="#d3d9ee" :stroke-width="px(1)" />
-            <line v-for="v in majorX" :key="'Mx' + v" :x1="v" :x2="v" :y1="-y1" :y2="-y0" :stroke="v === 0 ? '#39448a' : '#9aa6d6'" :stroke-width="px(v === 0 ? 2.5 : 1.5)" />
-            <line v-for="v in majorY" :key="'My' + v" :y1="-v" :y2="-v" :x1="x0" :x2="x0 + view.w" :stroke="v === 0 ? '#39448a' : '#9aa6d6'" :stroke-width="px(v === 0 ? 2.5 : 1.5)" />
+            <!-- the straightened photo of the table, exactly covering the mat, under the grid -->
+            <image v-if="mat && lab.matImage" data-testid="mat-picture" :href="lab.matImage.url" :x="mat.x0" :y="-mat.y1" :width="mat.x1 - mat.x0" :height="mat.y1 - mat.y0" preserveAspectRatio="none" />
+            <line v-for="v in minorX" :key="'mx' + v" :stroke-opacity="lineOpacity" :x1="v" :x2="v" :y1="-y1" :y2="-y0" stroke="#d3d9ee" :stroke-width="px(1)" />
+            <line v-for="v in minorY" :key="'my' + v" :stroke-opacity="lineOpacity" :y1="-v" :y2="-v" :x1="x0" :x2="x0 + view.w" stroke="#d3d9ee" :stroke-width="px(1)" />
+            <line v-for="v in majorX" :key="'Mx' + v" :stroke-opacity="lineOpacity" :x1="v" :x2="v" :y1="-y1" :y2="-y0" :stroke="v === 0 ? '#39448a' : '#9aa6d6'" :stroke-width="px(v === 0 ? 2.5 : 1.5)" />
+            <line v-for="v in majorY" :key="'My' + v" :stroke-opacity="lineOpacity" :y1="-v" :y2="-v" :x1="x0" :x2="x0 + view.w" :stroke="v === 0 ? '#39448a' : '#9aa6d6'" :stroke-width="px(v === 0 ? 2.5 : 1.5)" />
             <!-- origin marker -->
             <circle cx="0" cy="0" :r="px(5)" fill="#39448a" />
           </g>
@@ -566,6 +571,7 @@ const selectedName = computed(() => (selected.value === 'robot' ? 'Robot start' 
         </svg>
 
         <div class="pointer-events-none absolute left-2 top-2 rounded-full bg-[#101a3a]/85 px-3 py-1 text-xs font-extrabold text-white">{{ legend }}</div>
+        <div v-if="mat && lab.matImage" class="pointer-events-none absolute bottom-2 left-2 rounded-full bg-[#101a3a]/85 px-3 py-1 text-xs font-extrabold text-flag" data-testid="mat-picture-chip">≈ picture of the table</div>
         <div class="absolute right-2 top-2 flex gap-1">
           <button class="btn btn-ghost btn-sm" aria-label="Zoom out" @click="userMovedView = true; zoom(1.25)">−</button>
           <button class="btn btn-ghost btn-sm" aria-label="Zoom in" @click="userMovedView = true; zoom(0.8)">+</button>
@@ -691,15 +697,18 @@ const selectedName = computed(() => (selected.value === 'robot' ? 'Robot start' 
       <section class="card p-3">
         <h3 class="mb-2 font-extrabold">Mat</h3>
         <div class="flex flex-wrap gap-2">
-          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'open'" data-testid="mat-open" @click="lab.change((d) => setMat(d, 'open'))">Open floor</button>
-          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'classroom'" data-testid="mat-classroom" @click="lab.change((d) => setMat(d, 'classroom'))">Classroom mat</button>
-          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'competition'" data-testid="mat-competition" @click="lab.change((d) => setMat(d, 'competition'))">Competition table</button>
+          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'open'" data-testid="mat-open" :disabled="!!lab.matImage" @click="lab.change((d) => setMat(d, 'open'))">Open floor</button>
+          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'classroom'" data-testid="mat-classroom" :disabled="!!lab.matImage" @click="lab.change((d) => setMat(d, 'classroom'))">Classroom mat</button>
+          <button class="btn btn-ghost btn-sm" :aria-pressed="scene.mat === 'competition'" data-testid="mat-competition" :disabled="!!lab.matImage" @click="lab.change((d) => setMat(d, 'competition'))">Competition table</button>
           <button class="btn btn-ghost btn-sm" :aria-pressed="settings.snap" @click="lab.change((d) => (d.settings.snap = !d.settings.snap), false)">Snap to grid: {{ settings.snap ? 'on' : 'off' }}</button>
           <button class="btn btn-danger btn-sm" :disabled="scene.objects.length === 0" @click="clearAll">Clear everything</button>
         </div>
         <p v-if="scene.mat === 'classroom'" class="muted mt-2 text-xs">Classroom mat: 200 × 110 cm with a border wall (a typical table size, not an official mat).</p>
         <p v-if="scene.mat === 'competition'" class="muted mt-2 text-xs" data-testid="mat-note">Competition table: about 236 × 114 cm with a border wall.</p>
+        <p v-if="lab.matImage" class="muted mt-2 text-xs">Remove the picture to change the mat.</p>
       </section>
+
+      <MatPicturePanel />
     </div>
   </div>
 </template>
