@@ -75,9 +75,9 @@ The lab itself is unchanged and still needs the password. With the setting off, 
 ## Tests
 
 ```bash
-cd frontend && npm test            # 74 simulator and unit tests (Vitest)
+cd frontend && npm test            # 75 simulator and unit tests (Vitest)
 cd backend  && php artisan test    # 78 API and security tests (PHPUnit)
-cd tests    && npm install && npx playwright install chromium && npm test   # 40 browser tests
+cd tests    && npm install && npx playwright install chromium && npm test   # 45 browser tests
 ```
 
 The browser tests start their own backend and frontend on ports 8010 and 5183 with a separate database, a

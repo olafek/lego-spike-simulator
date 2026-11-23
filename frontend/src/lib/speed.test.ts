@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { nextSpeed } from './speed'
+import { nextSpeed, speedLabel } from './speed'
+
+describe('speedLabel', () => {
+  it('writes the slow speeds as fractions so the phone button stays narrow', () => {
+    expect(speedLabel(0.25)).toBe('¼×')
+    expect(speedLabel(0.5)).toBe('½×')
+    expect(speedLabel(1)).toBe('1×')
+    expect(speedLabel(4)).toBe('4×')
+  })
+})
 
 describe('nextSpeed', () => {
   it('steps through the speeds in order and wraps around', () => {

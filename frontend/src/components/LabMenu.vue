@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // Phones only: the ☰ button in the lab's top row and the panel it opens
 // (home, project name, save state, projects, settings, sound, leave).
+// The name saves on every keystroke (rename debounces the save): Safari drops the `change`
+// event when the panel closes while the field still has focus.
 import { ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { DEMO } from '@/lib/demo'
@@ -42,7 +44,7 @@ watch(
       aria-label="Project name"
       maxlength="80"
       data-testid="project-name"
-      @change="lab.rename(($event.target as HTMLInputElement).value)"
+      @input="lab.rename(($event.target as HTMLInputElement).value)"
     />
     <div class="grid grid-cols-2 gap-2">
       <RouterLink to="/projects" class="btn btn-ghost btn-sm" data-testid="nav-projects">📁 Projects</RouterLink>

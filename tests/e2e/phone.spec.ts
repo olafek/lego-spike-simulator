@@ -19,7 +19,7 @@ test('simulator: playback is one row with a speed button that cycles', async ({ 
   await speed.tap()
   await expect(speed).toHaveText('4×')
   await speed.tap()
-  await expect(speed).toHaveText('0.25×')
+  await expect(speed).toHaveText('¼×')
 })
 
 test('turning into a wide screen brings back the full controls', async ({ page }) => {
@@ -142,4 +142,61 @@ test('robot step: the badges on a card do not overlap', async ({ page }) => {
   const b = (await page.getByTestId('robot-state').boundingBox())!
   const overlap = a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
   expect(overlap).toBe(false)
+})
+
+test('lab: a name typed in ☰ is kept when ☰ closes by a tap outside', async ({ page }) => {
+  await login(page)
+  await openSample(page, 'seed-pod')
+  await page.getByTestId('lab-menu').tap()
+  await page.getByTestId('project-name').fill('Rocket run')
+  const saved = page.waitForResponse((r) => r.request().method() === 'PUT' && !!r.request().postData()?.includes('"name":"Rocket run"'), { timeout: 5_000 })
+  await page.getByTestId('goal-banner').tap()
+  await expect(page.getByTestId('lab-menu-panel')).toHaveCount(0)
+  await saved
+})
+
+// Smaller iPhones (SE / mini at 375 px, Display Zoom at 320 px): the playback row must stay real touch targets.
+for (const vp of [
+  { width: 375, height: 667 },
+  { width: 320, height: 568 },
+]) {
+  test(`narrow phone ${vp.width}×${vp.height}: playback stays one row of real touch targets`, async ({ page }) => {
+    await page.setViewportSize(vp)
+    await login(page)
+    await openSample(page, 'seed-pod')
+    const speed = page.getByTestId('speed-cycle')
+    await speed.tap()
+    await speed.tap()
+    await speed.tap() // 1× → 2× → 4× → slowest: the widest speed label
+    await page.getByTestId('play').tap() // "⏸ Pause": the widest play label
+    await expect(page.getByTestId('play')).toHaveAttribute('aria-label', 'Pause')
+    const play = (await page.getByTestId('play').boundingBox())!
+    for (const id of ['reset', 'step-prev', 'play', 'step-next', 'speed-cycle']) {
+      const b = (await page.getByTestId(id).boundingBox())!
+      expect(b.width, `${id} width`).toBeGreaterThanOrEqual(44)
+      expect(b.height, `${id} height`).toBeGreaterThanOrEqual(44)
+      expect(Math.abs(b.y + b.height / 2 - (play.y + play.height / 2)), `${id} is on the play row`).toBeLessThan(10)
+    }
+    expect(play.height, 'the Play label stays on one line').toBeLessThanOrEqual(70)
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+    expect(overflow).toBeLessThanOrEqual(1)
+  })
+}
+
+test('small phone in Safari (375×548): every camera can be chosen', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 548 })
+  await login(page)
+  await openSample(page, 'seed-pod')
+  await page.getByTestId('camera-menu').tap()
+  await page.getByTestId('camera-side').tap({ timeout: 5_000 })
+  await expect(page.getByTestId('camera-menu')).toHaveAttribute('aria-label', /Side/)
+})
+
+// What Safari shows with its toolbars on a 6.1" iPhone. The view is smaller here than at 844 px; keep it from shrinking.
+test('Safari-sized phone (390×664): the view and the controls fit', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 664 })
+  await login(page)
+  await openSample(page, 'seed-pod')
+  expect((await page.getByTestId('sim-canvas').boundingBox())!.height).toBeGreaterThanOrEqual(250)
+  for (const id of ['play', 'step-next', 'readout-moved', 'camera-menu']) await expect(page.getByTestId(id)).toBeInViewport()
 })
