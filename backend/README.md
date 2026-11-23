@@ -33,7 +33,7 @@ app sits behind a load balancer (login throttling and IP quotas use the client I
 | POST | `/api/login` `{password}` | 422 `wrong_password` (+`attemptsLeft`), 429 `cooldown` (+`retryAfter`), 503 `not_configured` |
 | POST | `/api/logout` | |
 | GET | `/api/usage` | counters and limits |
-| GET/POST | `/api/projects` | list (50 newest) / create `{name?, data?}` |
+| GET/POST | `/api/projects` | list (50 newest; `?tables=1` = every saved table) / create `{name?, data?, table?}` |
 | GET/PUT/DELETE | `/api/projects/{id}` | `data` is an opaque JSON object owned by the frontend (max 600 KB) |
 | POST | `/api/projects/{id}/duplicate` | copies screenshot files too |
 | GET | `/api/projects/{id}/export` · POST `/api/projects/import` | `{format:'spike-lab-project', version:1, ...}` |
@@ -41,6 +41,9 @@ app sits behind a load balancer (login throttling and IP quotas use the client I
 | PUT | `/api/projects/{id}/screenshots/order` `{ids}` | |
 | DELETE | `/api/projects/{id}/screenshots/{sid}` | |
 | GET | `/api/projects/{id}/screenshots/{sid}/image` | private bytes |
+| POST | `/api/projects/{id}/mat-image` | multipart `image`: the straightened photo of a table (one per project; replaces the old one) |
+| DELETE | `/api/projects/{id}/mat-image` | |
+| POST | `/api/projects/{id}/use-table` `{tableId}` | copies a saved table's picture here; returns the project plus `tableData` |
 | POST | `/api/projects/{id}/recognise` `{screenshotIds?}` | `{raw, driver, model, screenshotIds}` |
 | POST | `/api/ai/explain` `{blockText, programText?}` | `{text}` from the AI provider |
 | POST | `/api/ai/scene` `{description}` | `{raw}` from the AI provider |
@@ -52,7 +55,11 @@ Errors are always `{message, code, ...}`; `message` is written for a child.
 Validated by content (finfo + full decode), never by extension. PNG/JPEG/WebP; HEIC only if Imagick has a HEIC
 codec. Images are re-encoded (metadata stripped, EXIF orientation applied), downscaled to `LAB_MAX_IMAGE_DIMENSION`
 and stored on the private `local` disk under random names. `php artisan lab:prune` (scheduled hourly; needs
-`php artisan schedule:run` in cron) deletes projects not saved for `LAB_RETENTION_DAYS`.
+`php artisan schedule:run` in cron) deletes projects not saved for `LAB_RETENTION_DAYS`. Saved tables (`is_table`) are kept; demo tables expire with the demo.
+
+The mat picture is a `screenshots` row with `kind = 'mat'`. The browser straightens the photo and uploads only the
+finished mat rectangle, so the original photo never reaches the server. Program screenshots are `kind = 'program'`;
+`Project::screenshots()` returns only those, so limits, recognition and export never mix the two.
 
 ## AI
 

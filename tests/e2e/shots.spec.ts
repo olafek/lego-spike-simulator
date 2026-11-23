@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
-import { amountInput, login, openSample, playToEnd } from './helpers'
+import { amountInput, dragCorner, login, openSample, playToEnd, TABLE_CORNERS, TABLE_PHOTO } from './helpers'
 
 // Visual record of every main screen (tests/test-results/shots). Not an assertion-heavy test:
 // it exists so a human can look at the real pages after a run.
@@ -61,4 +61,22 @@ test('capture the main screens', async ({ page }, info) => {
   await playToEnd(page)
   await page.waitForTimeout(500)
   await shot('10-arm-orbit')
+
+  // your own table: a photo (here a generated, made-up mat) straightened into the floor
+  await page.goto('/')
+  await page.getByTestId('new-table').click()
+  await expect(page.getByTestId('mat-picture-panel')).toBeVisible()
+  await page.getByTestId('mat-picture-choose').setInputFiles(TABLE_PHOTO)
+  await expect(page.getByTestId('corner-photo')).toBeVisible()
+  for (let i = 0; i < 4; i++) await dragCorner(page, i, TABLE_CORNERS[i][0], TABLE_CORNERS[i][1])
+  await shot('13-table-corners')
+  await page.getByTestId('mat-picture-next').click()
+  await page.getByTestId('mat-picture-use').click()
+  await expect(page.getByTestId('mat-picture')).toBeVisible()
+  await page.getByTestId('add-obstacle').click()
+  await shot('14-table-editor')
+  await page.getByTestId('mission-done').click()
+  await page.getByTestId('camera-orbit').click()
+  await page.waitForTimeout(1000)
+  await shot('15-table-3d')
 })

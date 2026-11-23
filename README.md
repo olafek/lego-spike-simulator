@@ -67,6 +67,9 @@ More screens, including the 3D views and the iPad and iPhone layouts: **[the vis
   distance and force sensors.
 - **Five cameras.** From above, free 3D, follow, behind and side.
 - **Missions.** A goal such as "get the big seed pod onto the circle" is checked from the simulated result.
+- **Your own table.** Practising for a competition? Photograph the real table once. SPIKE Lab straightens
+  the photo into a true-size floor (about 236 × 114 cm, with a wall), you put blocks where the models stand,
+  and every program can then be run on that table.
 
 ![A square route seen from above: four 20 cm sides and four 90 degree turns](docs/screenshots/square.png)
 
@@ -79,6 +82,9 @@ More screens, including the 3D views and the iPad and iPhone layouts: **[the vis
 - **Approximations are labelled.** Ports, wheel size and motor speeds come from official LEGO documents where
   they exist; everything else (track width, tool sizes, how objects slide) is an estimate, marked "≈" in the app
   and listed in [docs/robots.md](docs/robots.md). Pushing and lifting are simplified: things slide but do not tip.
+- **A table picture is only a picture.** Places on it are as exact as the photo and the four corners you
+  mark, so it is labelled "≈". No competition mat ships with SPIKE Lab: the picture is your own upload, and
+  only the straightened mat is stored – never the original photo, which may show people.
 - **One shared password is not privacy.** It keeps strangers out; it does not separate one child's projects
   from another's. The app says so. (The optional public demo is different: there each visitor only sees
   their own projects, and they are deleted after a day.)
@@ -86,8 +92,8 @@ More screens, including the 3D views and the iPad and iPhone layouts: **[the vis
 ## Under the hood
 
 Vue 3 + TypeScript + Three.js in the browser, Laravel on the server, SQLite or MySQL.
-The simulator itself is plain TypeScript with no framework, covered by 75 unit tests; 78 server tests and
-46 browser tests (desktop, iPad landscape, iPad portrait, iPhone portrait) cover the rest.
+The simulator itself is plain TypeScript with no framework, covered by 86 unit tests; 96 server tests and
+60 browser tests (desktop, iPad landscape, iPad portrait, iPhone portrait) cover the rest.
 
 **Why Laravel?** I have worked with it since version 5 and I like it. It is also a very good fit for
 AI-assisted coding: the framework is opinionated, so there is one obvious place for everything and far less

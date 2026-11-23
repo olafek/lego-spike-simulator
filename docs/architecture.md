@@ -78,6 +78,29 @@ mirrors Tailwind's `sm` breakpoint, and components switch with `v-if` rather tha
 test id exists once on the page. The simulator viewport is never re-created when the layout switches, so
 turning the phone keeps the run and the playback position.
 
+## Tables and the mat picture
+
+A competition table is a walled mat of about 236 × 114 cm (`Scene.mat = 'competition'`; sizes and bounds for
+every mat kind come from `matSize()` / `matBounds()` in `core/scene.ts`). Runs on it may last 150 s.
+
+Its floor can be a photo of the real table:
+
+1. The browser opens the photo and the user marks the mat's four corners (`MatPicturePanel.vue`).
+2. `core/homography.ts` solves the mapping between those corners and the mat rectangle; `lib/straighten.ts`
+   looks every pixel of the mat up in the photo on a canvas. Nothing is sent to the server until this is done,
+   so the original photo (which may show people) never leaves the device.
+3. The straightened picture is uploaded to `POST /api/projects/{id}/mat-image` and stored as a `screenshots`
+   row with `kind = 'mat'`. `Project::screenshots()` only returns `kind = 'program'`, so listing, limits,
+   recognition and export never see it; `Project::matImage()` is the one mat picture.
+4. The picture is display only: an `<image>` under the grid in the mat editor and a texture on the floor in
+   the 3D view. The simulator ignores it, apart from adding one line to the run's assumptions.
+
+A **table** is a project with the column `is_table` set at creation. `GET /api/projects?tables=1` lists them
+all, and `lab:prune` never deletes a lab table (demo tables still expire). `POST /api/projects/{id}/use-table`
+copies a table's picture onto a program and returns the table's document; the frontend then copies its scene.
+The copy is independent, so a program can never change a saved table. A picture belongs to the mat kind it
+was straightened for: the mat kind is locked while a picture is on it.
+
 ## The public demo
 
 `/demo` (pages) and `/demo/api/*` (data) are the same app behind a different door, enabled by `LAB_DEMO_ENABLED`.
@@ -122,5 +145,6 @@ line to the `match` in `AppServiceProvider`.
 Projects: `GET/POST /api/projects`, `GET/PUT/DELETE /api/projects/{id}`, `POST …/duplicate`, `GET …/export`,
 `POST /api/projects/import`. Screenshots: `POST …/screenshots` (`image`, optional `replaces`),
 `PUT …/screenshots/order`, `DELETE …/screenshots/{sid}`, `GET …/screenshots/{sid}/image`.
+Tables: `POST …/mat-image` (`image`), `DELETE …/mat-image`, `POST …/use-table` (`tableId`), `GET /api/projects?tables=1`.
 AI: `POST …/recognise`, `POST /api/ai/explain`, `POST /api/ai/scene`. Diagnostics: `GET /api/usage`.
 Errors are always `{ message, code }` with a child-friendly message. See `backend/README.md` for details.

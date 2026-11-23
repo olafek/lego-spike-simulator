@@ -45,7 +45,7 @@ labelled "practice mode" in the app. The whole flow works with no AI service at 
 | `LAB_MAX_UPLOAD_MB`, `LAB_MAX_SCREENSHOTS_PER_PROJECT`, `LAB_MAX_IMAGE_DIMENSION` | Upload limits. |
 | `LAB_MAX_CONCURRENT_ANALYSES`, `LAB_MAX_UPLOADS_PER_HOUR`, `LAB_MAX_PROJECTS_PER_SESSION_PER_HOUR` | Limits against misuse. |
 | `LAB_LOGIN_MAX_ATTEMPTS`, `LAB_LOGIN_COOLDOWN_SECONDS` | Wrong-password throttling. |
-| `LAB_RETENTION_DAYS` | Projects and screenshots untouched for this long are deleted by `php artisan lab:prune`. |
+| `LAB_RETENTION_DAYS` | Projects and screenshots untouched for this long are deleted by `php artisan lab:prune`. Saved tables are kept until someone deletes them. |
 | `LAB_DEMO_ENABLED` | `true` opens a public demo at `/demo` (see below). Off by default. |
 | `LAB_DEMO_RETENTION_HOURS` | Demo projects are deleted after this many hours (default 24). |
 | `AI_PROVIDER` | `mock`, `openai` or `gemini`. One provider reads the screenshots, explains blocks and suggests mats. |
@@ -75,9 +75,9 @@ The lab itself is unchanged and still needs the password. With the setting off, 
 ## Tests
 
 ```bash
-cd frontend && npm test            # 75 simulator and unit tests (Vitest)
-cd backend  && php artisan test    # 78 API and security tests (PHPUnit)
-cd tests    && npm install && npx playwright install chromium && npm test   # 46 browser tests
+cd frontend && npm test            # 86 simulator and unit tests (Vitest)
+cd backend  && php artisan test    # 96 API and security tests (PHPUnit)
+cd tests    && npm install && npx playwright install chromium && npm test   # 60 browser tests
 ```
 
 The browser tests start their own backend and frontend on ports 8010 and 5183 with a separate database, a
@@ -87,6 +87,7 @@ throw-away password and the offline picture reader. They never touch real data a
 reader once (one paid AI request) and prints what came back.
 
 `npm run fixture` in `tests/` redraws the sample screenshot from `fixtures/sample-program.html`.
+`npm run table-fixture` redraws `fixtures/sample-table.png`, the made-up mat the table tests straighten.
 `npm run demo` re-records the animated demo at the top of the README, and `node make-social-preview.mjs`
 redraws `docs/social-preview.png`. Every test run also leaves fresh screenshots of the main screens in
 `tests/test-results/shots/<device>/` (`shots.spec.ts`, and `phone-tour.spec.ts` for the iPhone); the pictures in

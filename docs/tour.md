@@ -75,6 +75,27 @@ picked up and carried.
 
 A repeat block drives four sides and four corners. The path stays on the mat with a marker every 10 cm.
 
+## Your own table
+
+![A photo of a mat seen at an angle, with a numbered dot on each corner](screenshots/table-corners.png)
+
+For competition practice the floor can be a photo of the real table. Choose a photo, put a dot on each
+corner of the mat (a magnifier helps), and SPIKE Lab straightens it into a top-down floor at true size.
+A corner that the photo cut off can sit outside the picture. Only the straightened mat is kept; the photo
+itself never leaves the device.
+
+![The straightened mat in the mat editor, with a block placed on it](screenshots/table-editor.png)
+
+The competition table is about 236 × 114 cm with a wall around it. Blocks, lines and targets go on top of
+the picture, and the robot can start anywhere. The picture carries a "≈" label: places on it are only as
+exact as the photo and the four corners.
+
+![The same table in the 3D view, the robot standing on the photographed mat](screenshots/table-3d.png)
+
+A table is made once and saved under **Tables** on the home screen. In any program, **Use a table** in the
+Mat step copies it in – so a child can move things around without ever changing the saved table. The
+pictures here use a made-up mat; SPIKE Lab does not come with any real competition mat.
+
 ## On an iPad
 
 <img src="screenshots/ipad-portrait.png" alt="The simulator in iPad portrait layout" width="420">
