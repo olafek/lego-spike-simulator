@@ -1,7 +1,7 @@
 # A visual tour of SPIKE Lab
 
 Every picture here is a real screenshot of the running app, taken by the automated browser tests
-(`tests/e2e/shots.spec.ts`). Back to the [README](../README.md).
+(`tests/e2e/shots.spec.ts`, and `tests/e2e/phone-tour.spec.ts` for the iPhone). Back to the [README](../README.md).
 
 ## The lab door
 
@@ -81,3 +81,24 @@ A repeat block drives four sides and four corners. The path stays on the mat wit
 
 Portrait and landscape are both laid out on purpose: the stage on top, the big play controls under it, the
 blocks below. Every button is at least 44 points tall, and nothing depends on hovering.
+
+## On an iPhone
+
+<img src="screenshots/iphone-not-yet.png" alt="iPhone: the robot stopped short; the numbers for the block show Asked 20 cm, Driven 20 cm, To go 0 cm" width="240">
+<img src="screenshots/iphone-success.png" alt="iPhone: after changing 20 cm to 30 cm, mission complete" width="240">
+<img src="screenshots/iphone-3d.png" alt="iPhone: the same run in the free 3D camera" width="240">
+
+Held upright, a phone gets its own simpler layout, so the robot keeps about half the screen:
+
+- **One top row.** The four steps, plus ☰ for the project name, projects, settings, sound and leaving the lab.
+  If saving fails, a warning shows straight away, without opening ☰.
+- **The numbers under the picture.** One line: how far the robot moved, how far it turned and where it is.
+  ⓘ opens the numbers for the block that is running (asked, driven, to go, how far each wheel rolled).
+  "≈ estimated" and "🧱 stuck" always stay on that line.
+- **One camera button.** It shows the camera in use; tap it to pick another.
+- **One row to play.** Back to the start, previous, Play, next, and one speed button that steps through
+  ¼×, ½×, 1×, 2× and 4×. On the narrowest phones Play shows only its icon.
+- **The blocks below**, so changing a number and pressing Play again happens on one screen.
+
+Turned sideways, a phone uses the tablet layout. In Safari the toolbars take part of the screen; added to the
+Home Screen, SPIKE Lab gets the whole height.

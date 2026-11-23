@@ -69,6 +69,15 @@ A passive fork only pushes. A lift arm picks up liftable things touching its for
 and carries them; a grabber holds what is between its jaws when they close on it. Colour sensor = colour under
 one point; distance sensor = one forward ray (5–200 cm); force sensor = pressed / not pressed.
 
+## Screen sizes
+
+The same views serve desktop, iPad and iPhone. Below 640 px wide (a phone held upright) a few components
+render a phone variant: one top row with a ☰ menu (`LabMenu.vue`) instead of the app header, the readouts as
+one line under the picture, one camera button and one playback row. `usePhone()` in `src/lib/phone.ts`
+mirrors Tailwind's `sm` breakpoint, and components switch with `v-if` rather than hiding with CSS, so every
+test id exists once on the page. The simulator viewport is never re-created when the layout switches, so
+turning the phone keeps the run and the playback position.
+
 ## The public demo
 
 `/demo` (pages) and `/demo/api/*` (data) are the same app behind a different door, enabled by `LAB_DEMO_ENABLED`.

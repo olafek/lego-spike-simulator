@@ -33,7 +33,7 @@ speaks the OpenAI format) – see [docs/setup.md](docs/setup.md).
 
 *– Olaf*
 
-It is built for children: big buttons, few words, iPad first.
+It is built for children: big buttons, few words, iPad first – and it works on an iPhone held upright too.
 
 ## How it works
 
@@ -52,7 +52,7 @@ It is built for children: big buttons, few words, iPad first.
 | ![The robot stopped short of the target: mission not complete yet](docs/screenshots/sim-not-yet.png) | ![After changing 20 cm to 30 cm the seed pod is on the target](docs/screenshots/sim-success.png) |
 | 20 cm was not far enough. The readouts say exactly how far the robot went and where it ended. | Edit the block, the robot reruns at once. The original screenshot is kept untouched. |
 
-More screens, including the 3D views and the iPad layout: **[the visual tour](docs/tour.md)**.
+More screens, including the 3D views and the iPad and iPhone layouts: **[the visual tour](docs/tour.md)**.
 
 ## What it can do
 
@@ -87,7 +87,7 @@ More screens, including the 3D views and the iPad layout: **[the visual tour](do
 
 Vue 3 + TypeScript + Three.js in the browser, Laravel on the server, SQLite or MySQL.
 The simulator itself is plain TypeScript with no framework, covered by 75 unit tests; 78 server tests and
-45 browser tests (desktop, iPad landscape, iPad portrait, iPhone portrait) cover the rest.
+46 browser tests (desktop, iPad landscape, iPad portrait, iPhone portrait) cover the rest.
 
 **Why Laravel?** I have worked with it since version 5 and I like it. It is also a very good fit for
 AI-assisted coding: the framework is opinionated, so there is one obvious place for everything and far less
