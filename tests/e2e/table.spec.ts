@@ -53,6 +53,7 @@ test('the mat kind is locked while a picture is on it', async ({ page }) => {
   await expect(page.getByTestId('mission-editor')).toContainText('Remove the picture to change the mat')
 
   await page.getByTestId('mat-picture-remove').click()
+  await page.getByTestId('mat-picture-remove-yes').click()
   await expect(page.getByTestId('mat-picture')).toHaveCount(0)
   await expect(page.getByTestId('mat-open')).toBeEnabled()
 })
@@ -157,4 +158,95 @@ test('the table used last is offered first', async ({ page }) => {
   await programOnMatStep(page, 'turn-90')
   await page.getByTestId('use-table').click()
   await expect(page.getByTestId('table-option').first()).toContainText('Table Alpha')
+})
+
+// ---- review fixes -------------------------------------------------------------------------------
+
+/** Call the lab API from inside the page (same session, with the CSRF token). */
+async function labApi(page: Page, method: string, url: string, body?: unknown): Promise<any> {
+  return page.evaluate(
+    async ({ method, url, body }) => {
+      const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)![1])
+      const res = await fetch(url, {
+        method,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-XSRF-TOKEN': token },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      })
+      return res.json()
+    },
+    { method, url, body },
+  )
+}
+
+const projectId = (page: Page) => page.url().match(/\/p\/([0-9a-f]{32})/)![1]
+
+test('removing the picture asks first', async ({ page }) => {
+  await openMatStep(page)
+  await addTablePicture(page)
+  await page.getByTestId('mat-picture-remove').click()
+  await expect(page.getByTestId('mat-picture-remove-yes')).toBeVisible()
+  await expect(page.getByTestId('mat-picture')).toBeVisible() // nothing is gone yet
+  await page.getByTestId('mat-picture-remove-no').click()
+  await expect(page.getByTestId('mat-picture')).toBeVisible()
+  await page.getByTestId('mat-picture-remove').click()
+  await page.getByTestId('mat-picture-remove-yes').click()
+  await expect(page.getByTestId('mat-picture')).toHaveCount(0)
+})
+
+test('a picture on a mat it was not made for is not stretched and can still be removed', async ({ page }) => {
+  await openMatStep(page)
+  await addTablePicture(page)
+  await expect(page.getByTestId('save-state')).toContainText('saved')
+  // the picture and the mat got out of step (for example a save that failed): the mat is the open floor again
+  const id = projectId(page)
+  const project = await labApi(page, 'GET', `/api/projects/${id}`)
+  project.data.scene.mat = 'open'
+  await labApi(page, 'PUT', `/api/projects/${id}`, { data: project.data })
+  await page.reload()
+  await expect(page.getByTestId('mission-editor')).toBeVisible()
+
+  await expect(page.getByTestId('mat-picture')).toHaveCount(0)
+  await expect(page.getByTestId('mat-picture-mismatch')).toBeVisible()
+  await page.getByTestId('mat-picture-remove').click()
+  await page.getByTestId('mat-picture-remove-yes').click()
+  await expect(page.getByTestId('mat-picture-mismatch')).toHaveCount(0)
+  await expect(page.getByTestId('mat-competition')).toBeEnabled()
+})
+
+test('a table that cannot be read leaves the program as it was', async ({ page }) => {
+  await openMatStep(page)
+  await addTablePicture(page)
+  await labApi(page, 'POST', '/api/projects', { name: 'Broken table', table: true, data: { nope: true } })
+  await page.getByTestId('use-table').click()
+  await page.getByTestId('table-option').filter({ hasText: 'Broken table' }).click()
+  await page.getByTestId('use-table-confirm').click()
+  await expect(page.getByTestId('table-picker')).toContainText('cannot read')
+  // the picture this program already had is still there and still loads
+  const [r, g, b] = await matPixel(page, 0, 0)
+  expect(r).toBeGreaterThan(180)
+  expect(g).toBeLessThan(90)
+  expect(b).toBeLessThan(90)
+})
+
+test('saving a project with a table picture as a file says the picture is left out', async ({ page }) => {
+  await openMatStep(page)
+  await addTablePicture(page)
+  await expect(page.getByTestId('save-state')).toContainText('saved')
+  await page.goto('/projects')
+  await expect(page.getByTestId('project-export-note').first()).toContainText('picture is not saved in the file')
+})
+
+test('a corner dot dragged far away stays on the screen', async ({ page }) => {
+  await openMatStep(page)
+  await page.getByTestId('mat-picture-choose').setInputFiles(TABLE_PHOTO)
+  await expect(page.getByTestId('corner-photo')).toBeVisible()
+  await dragCorner(page, 0, -0.9, -0.9)
+  await expect(page.getByTestId('corner-0')).toBeInViewport({ ratio: 0.95 })
+  await dragCorner(page, 2, 1.9, 1.9)
+  await expect(page.getByTestId('corner-2')).toBeInViewport({ ratio: 0.95 })
+  // and it can be picked up again
+  await dragCorner(page, 0, 0.15, 0.2)
+  await dragCorner(page, 2, 0.95, 0.85)
+  await expect(page.getByTestId('mat-picture-next')).toBeEnabled()
 })

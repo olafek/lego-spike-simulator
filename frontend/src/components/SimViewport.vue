@@ -14,7 +14,7 @@ const failed = ref(false)
 let observer: ResizeObserver | null = null
 
 const setup = computed<RendererSetup | null>(() =>
-  lab.data ? { robot: lab.robot, attachments: lab.data.attachments, scene: lab.data.scene, settings: lab.data.settings, matImageUrl: lab.matImage?.url ?? null } : null,
+  lab.data ? { robot: lab.robot, attachments: lab.data.attachments, scene: lab.data.scene, settings: lab.data.settings, matImageUrl: lab.matPicture?.url ?? null } : null,
 )
 
 const unit = computed(() => lab.data?.settings.unit ?? 'cm')

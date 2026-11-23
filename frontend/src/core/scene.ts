@@ -115,6 +115,14 @@ export function objectSize(o: SceneObject): { r: number; w: number; l: number; h
   return { r: o.r ?? d.r ?? 0, w: o.w ?? d.w ?? 0, l: o.l ?? d.l ?? 0, h: d.h }
 }
 
+/** Was this picture straightened for this mat? (Same proportions; a picture is never stretched onto another mat.) */
+export function pictureFitsMat(picture: { width: number; height: number }, mat: MatKind): boolean {
+  const size = matSize(mat)
+  if (!size || picture.height <= 0) return false
+  const want = size.widthMm / size.lengthMm
+  return Math.abs(picture.width / picture.height - want) / want < 0.01
+}
+
 let sceneId = 0
 export function makeObject(type: ObjectType, x: number, y: number): SceneObject {
   sceneId += 1

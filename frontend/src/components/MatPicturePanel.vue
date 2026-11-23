@@ -18,10 +18,10 @@ type Stage = 'idle' | 'corners' | 'preview'
 const stage = ref<Stage>('idle')
 const busy = ref(false)
 const error = ref('')
+/** removing cannot be undone (the photo was never kept), so it asks first */
+const confirmRemove = ref(false)
 
 const size = computed(() => (lab.data ? matSize(lab.data.scene.mat) : null))
-/** how far outside the photo a dot may go, as a fraction of the photo */
-const OUTSIDE = 0.25
 const CORNER_NAMES = ['top left', 'top right', 'bottom right', 'bottom left']
 
 let photo: HTMLCanvasElement | null = null
@@ -105,12 +105,20 @@ async function choose(e: Event) {
   }
 }
 
-const clamp = (v: number) => Math.min(1 + OUTSIDE, Math.max(-OUTSIDE, v))
-function moveTo(i: number, clientX: number, clientY: number) {
+/**
+ * A dot may sit outside the photo (a corner the photo cut off), but never outside the area around it:
+ * a dot that left the screen could not be picked up again.
+ */
+function place(i: number, clientX: number, clientY: number) {
   const rect = photoEl.value?.getBoundingClientRect()
-  if (!rect || rect.width === 0) return
-  corners.value[i] = { x: clamp((clientX - rect.left) / rect.width), y: clamp((clientY - rect.top) / rect.height) }
+  const area = areaEl.value?.getBoundingClientRect()
+  if (!rect || !area || rect.width === 0) return
+  const half = 22 // half a dot
+  const x = Math.min(area.right - half, Math.max(area.left + half, clientX))
+  const y = Math.min(area.bottom - half, Math.max(area.top + half, clientY))
+  corners.value[i] = { x: (x - rect.left) / rect.width, y: (y - rect.top) / rect.height }
 }
+const moveTo = place
 function grab(i: number, e: PointerEvent) {
   active.value = i
   ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -124,8 +132,10 @@ function nudge(i: number, e: KeyboardEvent) {
   const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key]
   if (!d) return
   e.preventDefault()
+  const rect = photoEl.value?.getBoundingClientRect()
+  if (!rect) return
   const c = corners.value[i]
-  corners.value[i] = { x: clamp(c.x + d[0]), y: clamp(c.y + d[1]) }
+  place(i, rect.left + (c.x + d[0]) * rect.width, rect.top + (c.y + d[1]) * rect.height)
 }
 
 /** the magnifier: the photo three times larger, centred on the dot being moved */
@@ -186,6 +196,7 @@ async function remove() {
   error.value = ''
   try {
     await lab.removeMatPicture()
+    confirmRemove.value = false
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'The picture could not be removed. Please try again.'
   } finally {
@@ -195,13 +206,23 @@ async function remove() {
 </script>
 
 <template>
-  <section v-if="size" class="card p-3" data-testid="mat-picture-panel">
+  <section v-if="size || lab.matImage" class="card p-3" data-testid="mat-picture-panel">
     <h3 class="mb-1 font-extrabold">Table picture</h3>
 
     <template v-if="lab.matImage">
+      <p v-if="lab.matPictureMismatch" class="notice notice-warn mb-2 text-sm font-bold" role="alert" data-testid="mat-picture-mismatch">
+        This picture was made for another mat, so it is not shown. Remove it to carry on.
+      </p>
       <div class="flex flex-wrap items-center gap-2">
         <img :src="lab.matImage.url" alt="The picture of the table used as the floor" class="h-14 rounded-lg border-2 border-line" />
-        <button class="btn btn-ghost btn-sm" :disabled="busy" data-testid="mat-picture-remove" @click="remove">Remove picture</button>
+        <button v-if="!confirmRemove" class="btn btn-ghost btn-sm" :disabled="busy" data-testid="mat-picture-remove" @click="confirmRemove = true">Remove picture</button>
+      </div>
+      <div v-if="confirmRemove" class="notice notice-warn pop mt-2" role="alertdialog" aria-label="Please confirm">
+        <p class="font-bold">Remove the picture for good? The photo itself was never saved, so it would have to be taken again.</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <button class="btn btn-danger btn-sm" :disabled="busy" data-testid="mat-picture-remove-yes" @click="remove">Yes, remove it</button>
+          <button class="btn btn-ghost btn-sm" :disabled="busy" data-testid="mat-picture-remove-no" @click="confirmRemove = false">No, keep it</button>
+        </div>
       </div>
       <p class="muted mt-2 text-xs">≈ The picture is a straightened photo. Places on it are only as exact as the photo and the four corners.</p>
     </template>

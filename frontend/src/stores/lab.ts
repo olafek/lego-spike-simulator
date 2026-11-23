@@ -8,6 +8,7 @@ import { BLOCK_BY_OP } from '@/core/catalog'
 import { cloneBlock, makeBlock, newId, normaliseRecognition, programProblems, RecognitionError, type Block, type ParamValue, type Program } from '@/core/ir'
 import { newProjectData, parseProjectData, setMat, type ProjectData } from '@/core/project'
 import { resolveRobot, ROBOT_BY_ID } from '@/core/robots'
+import { pictureFitsMat } from '@/core/scene'
 import { simulate, type SimResult } from '@/core/simulate'
 import { nextBoundary, prevBoundary, readout } from '@/core/timeline'
 
@@ -41,6 +42,10 @@ export const useLab = defineStore('lab', () => {
   const matImage = ref<MatImageInfo | null>(null)
   /** this project is a saved table */
   const isTable = ref(false)
+  /** the picture to draw: only when it was straightened for the mat the project is on now */
+  const matPicture = computed(() => (matImage.value && data.value && pictureFitsMat(matImage.value, data.value.scene.mat) ? matImage.value : null))
+  /** there is a picture, but it belongs to another mat (the two got out of step): it is not drawn */
+  const matPictureMismatch = computed(() => !!matImage.value && !!data.value && !matPicture.value)
   const loading = ref(false)
   const loadError = ref<string | null>(null)
   const saveState = ref<'saved' | 'saving' | 'error'>('saved')
@@ -156,7 +161,7 @@ export const useLab = defineStore('lab', () => {
       robot: robot.value,
       attachments: JSON.parse(JSON.stringify(d.attachments)),
       scene: JSON.parse(JSON.stringify(d.scene)),
-      options: { calibration: d.settings.calibration, slip: d.settings.slip, maxSeconds: d.settings.maxSeconds, floorPicture: !!matImage.value },
+      options: { calibration: d.settings.calibration, slip: d.settings.slip, maxSeconds: d.settings.maxSeconds, floorPicture: !!matPicture.value },
     })
     cursor.value = 0
     runCount.value += 1
@@ -359,18 +364,22 @@ export const useLab = defineStore('lab', () => {
   /** Put a saved table onto this project: its picture is copied on the server, its scene here. */
   async function useTable(tableId: string): Promise<void> {
     if (!id.value || !data.value) throw new Error('No project')
-    const rec = await api.useTable(id.value, tableId)
+    // read the table first: if it cannot be read, nothing on this project is touched
     let table: ProjectData
     try {
-      table = parseProjectData(rec.tableData)
-    } catch {
+      table = parseProjectData((await api.project(tableId)).data)
+    } catch (e) {
+      if (e instanceof ApiError) throw e
       throw new Error('That table was saved in a format SPIKE Lab cannot read.')
     }
+    const rec = await api.useTable(id.value, tableId)
     matImage.value = rec.matImage ?? null
     change((d) => {
       d.scene = JSON.parse(JSON.stringify(table.scene))
       setMat(d, table.scene.mat)
     })
+    // the picture is already on the server: save the matching mat now rather than a moment later
+    await saveNow()
     try {
       localStorage.setItem(LAST_TABLE_KEY, tableId)
     } catch {
@@ -434,6 +443,8 @@ export const useLab = defineStore('lab', () => {
     data,
     screenshots,
     matImage,
+    matPicture,
+    matPictureMismatch,
     isTable,
     setMatPicture,
     removeMatPicture,

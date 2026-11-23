@@ -68,7 +68,7 @@ export async function matPixel(page: Page, dxMm: number, dyMm: number): Promise<
   const href = await page.getByTestId('mat-picture').getAttribute('href')
   return page.evaluate(
     async ({ href, dxMm, dyMm }) => {
-      const bitmap = await createImageBitmap(await (await fetch(href!, { credentials: 'same-origin' })).blob())
+      const bitmap = await createImageBitmap(await (await fetch(href!, { credentials: 'same-origin', cache: 'no-store' })).blob())
       const canvas = document.createElement('canvas')
       canvas.width = bitmap.width
       canvas.height = bitmap.height

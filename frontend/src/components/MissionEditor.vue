@@ -136,7 +136,7 @@ const isLabelled = (mm: number) => Math.round(mm / major.value) % labelEvery.val
 const legend = computed(() => `1 square = ${round(mmToDisplay(major.value, unit.value), 1)} ${unit.value}`)
 const mat = computed(() => (scene.value ? matBounds(scene.value.mat) : null))
 /** grid lines are fainter over a picture, so the picture stays readable */
-const lineOpacity = computed(() => (lab.matImage ? 0.4 : 1))
+const lineOpacity = computed(() => (lab.matPicture ? 0.4 : 1))
 
 // ---- selection & dragging -------------------------------------------------------------------
 
@@ -479,7 +479,7 @@ const selectedName = computed(() => (selected.value === 'robot' ? 'Robot start' 
           <g pointer-events="none">
             <rect v-if="mat" :x="mat.x0" :y="-mat.y1" :width="mat.x1 - mat.x0" :height="mat.y1 - mat.y0" fill="#ffffff" stroke="#5b6694" :stroke-width="px(4)" />
             <!-- the straightened photo of the table, exactly covering the mat, under the grid -->
-            <image v-if="mat && lab.matImage" data-testid="mat-picture" :href="lab.matImage.url" :x="mat.x0" :y="-mat.y1" :width="mat.x1 - mat.x0" :height="mat.y1 - mat.y0" preserveAspectRatio="none" />
+            <image v-if="mat && lab.matPicture" data-testid="mat-picture" :href="lab.matPicture.url" :x="mat.x0" :y="-mat.y1" :width="mat.x1 - mat.x0" :height="mat.y1 - mat.y0" preserveAspectRatio="none" />
             <line v-for="v in minorX" :key="'mx' + v" :stroke-opacity="lineOpacity" :x1="v" :x2="v" :y1="-y1" :y2="-y0" stroke="#d3d9ee" :stroke-width="px(1)" />
             <line v-for="v in minorY" :key="'my' + v" :stroke-opacity="lineOpacity" :y1="-v" :y2="-v" :x1="x0" :x2="x0 + view.w" stroke="#d3d9ee" :stroke-width="px(1)" />
             <line v-for="v in majorX" :key="'Mx' + v" :stroke-opacity="lineOpacity" :x1="v" :x2="v" :y1="-y1" :y2="-y0" :stroke="v === 0 ? '#39448a' : '#9aa6d6'" :stroke-width="px(v === 0 ? 2.5 : 1.5)" />
@@ -572,7 +572,7 @@ const selectedName = computed(() => (selected.value === 'robot' ? 'Robot start' 
         </svg>
 
         <div class="pointer-events-none absolute left-2 top-2 rounded-full bg-[#101a3a]/85 px-3 py-1 text-xs font-extrabold text-white">{{ legend }}</div>
-        <div v-if="mat && lab.matImage" class="pointer-events-none absolute bottom-2 left-2 rounded-full bg-[#101a3a]/85 px-3 py-1 text-xs font-extrabold text-flag" data-testid="mat-picture-chip">≈ picture of the table</div>
+        <div v-if="mat && lab.matPicture" class="pointer-events-none absolute bottom-2 left-2 rounded-full bg-[#101a3a]/85 px-3 py-1 text-xs font-extrabold text-flag" data-testid="mat-picture-chip">≈ picture of the table</div>
         <div class="absolute right-2 top-2 flex gap-1">
           <button class="btn btn-ghost btn-sm" aria-label="Zoom out" @click="userMovedView = true; zoom(1.25)">−</button>
           <button class="btn btn-ghost btn-sm" aria-label="Zoom in" @click="userMovedView = true; zoom(0.8)">+</button>

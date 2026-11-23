@@ -127,6 +127,7 @@ onMounted(refresh)
           <div class="mt-2 flex flex-wrap gap-2">
             <button class="btn btn-ghost btn-sm" data-testid="project-duplicate" @click="duplicate(p)">⧉ Make a copy</button>
             <button class="btn btn-ghost btn-sm" data-testid="project-export" @click="exportProject(p)">📤 Save as file</button>
+            <span v-if="p.matImageUrl" class="muted self-center text-xs" data-testid="project-export-note">The table picture is not saved in the file.</span>
             <button v-if="confirmDelete !== p.id" class="btn btn-ghost btn-sm" data-testid="project-delete" @click="confirmDelete = p.id">🗑 Delete</button>
             <template v-else>
               <span class="self-center font-bold text-danger">Delete it and its screenshots for good?</span>

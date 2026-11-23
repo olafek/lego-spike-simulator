@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isWalled, matBounds, matSize } from './scene'
+import { isWalled, matBounds, matSize, pictureFitsMat } from './scene'
 
 describe('mats', () => {
   it('gives the competition mat its size and bounds', () => {
@@ -11,5 +11,13 @@ describe('mats', () => {
     expect(isWalled('competition')).toBe(true)
     expect(isWalled('classroom')).toBe(true)
     expect(isWalled('open')).toBe(false)
+  })
+
+  it('knows whether a picture was straightened for a mat', () => {
+    expect(pictureFitsMat({ width: 2362, height: 1143 }, 'competition')).toBe(true)
+    expect(pictureFitsMat({ width: 1181, height: 572 }, 'competition')).toBe(true) // shrunk, rounded
+    expect(pictureFitsMat({ width: 2362, height: 1143 }, 'classroom')).toBe(false) // would be stretched
+    expect(pictureFitsMat({ width: 2000, height: 1100 }, 'classroom')).toBe(true)
+    expect(pictureFitsMat({ width: 2362, height: 1143 }, 'open')).toBe(false) // the open floor has no picture
   })
 })
