@@ -16,3 +16,5 @@ playwright-report/
 .vscode/
 *.log
 .DS_Store
+
+stuff/
