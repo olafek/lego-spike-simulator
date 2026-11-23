@@ -4,7 +4,9 @@ import type { CameraMode } from '@/core/project'
 import { ATTACHMENTS } from '@/core/robots'
 import { goalText } from '@/core/scene'
 import { formatLength, gridChoices, round, type DisplayUnit } from '@/core/units'
+import { usePhone } from '@/lib/phone'
 import { blip } from '@/lib/sound'
+import { nextSpeed } from '@/lib/speed'
 import { SPEEDS, useLab } from '@/stores/lab'
 import { useSession } from '@/stores/session'
 import ProgramPanel from './ProgramPanel.vue'
@@ -14,6 +16,7 @@ const lab = useLab()
 const session = useSession()
 const emit = defineEmits<{ step: [step: 'robot' | 'mission'] }>()
 
+const phone = usePhone()
 const data = computed(() => lab.data!)
 const settings = computed(() => data.value.settings)
 const unit = computed(() => settings.value.unit)
@@ -168,14 +171,23 @@ const confetti = Array.from({ length: 28 }, (_, i) => ({ left: (i * 37) % 100, d
           />
           <span class="w-14 font-mono text-sm tabular-nums">{{ ((result?.frames.length ?? 1) * (result?.dt ?? 0.01) - (result?.dt ?? 0.01)).toFixed(1) }} s</span>
         </div>
-        <div class="flex flex-wrap items-center justify-center gap-2">
+        <div class="flex flex-wrap items-center justify-center gap-2 max-sm:flex-nowrap max-sm:gap-1.5">
           <button class="btn btn-ghost" :disabled="!canPlay" aria-label="Back to the start" data-testid="reset" @click="lab.resetRun()">⏮</button>
           <button class="btn btn-ghost" :disabled="!canPlay || lab.frameIndex === 0" aria-label="Previous instruction" data-testid="step-prev" @click="step(-1)">◀ <span class="hidden sm:inline">Back</span></button>
-          <button class="btn btn-sun btn-xl min-w-36" :disabled="!canPlay" :aria-label="lab.playing ? 'Pause' : 'Play'" data-testid="play" @click="play">
+          <button class="btn btn-sun btn-xl min-w-36 max-sm:min-w-0 max-sm:flex-1 max-sm:px-3" :disabled="!canPlay" :aria-label="lab.playing ? 'Pause' : 'Play'" data-testid="play" @click="play">
             {{ lab.playing ? '⏸ Pause' : finished ? '↻ Again' : '▶ Play' }}
           </button>
           <button class="btn btn-ghost" :disabled="!canPlay || lab.atEnd" aria-label="Next instruction" data-testid="step-next" @click="step(1)"><span class="hidden sm:inline">Next</span> ▶</button>
-          <div class="flex gap-1" role="group" aria-label="Playback speed">
+          <button
+            v-if="phone"
+            class="btn btn-ghost px-3"
+            :aria-label="`Playback speed ${settings.speed}×. Tap to change.`"
+            data-testid="speed-cycle"
+            @click="lab.setSpeed(nextSpeed(settings.speed))"
+          >
+            {{ settings.speed }}×
+          </button>
+          <div v-else class="flex gap-1" role="group" aria-label="Playback speed">
             <button v-for="s in SPEEDS" :key="s" class="btn btn-ghost btn-sm px-2" :class="{ 'is-on': settings.speed === s }" :aria-pressed="settings.speed === s" :data-testid="`speed-${s}`" @click="lab.setSpeed(s)">{{ s }}×</button>
           </div>
         </div>

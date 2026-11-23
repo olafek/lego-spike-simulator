@@ -11,7 +11,7 @@ import { resolveRobot, ROBOT_BY_ID } from '@/core/robots'
 import { simulate, type SimResult } from '@/core/simulate'
 import { nextBoundary, prevBoundary, readout } from '@/core/timeline'
 
-export const SPEEDS = [0.25, 0.5, 1, 2, 4]
+export { SPEEDS } from '@/lib/speed'
 
 function findList(program: Program, blockId: string): { list: Block[]; index: number } | null {
   const search = (list: Block[]): { list: Block[]; index: number } | null => {

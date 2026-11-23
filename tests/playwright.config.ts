@@ -28,6 +28,7 @@ const backendEnv = {
 }
 
 const tablet = { ...devices['Desktop Chrome'], hasTouch: true, isMobile: false, deviceScaleFactor: 2 }
+const phone = { ...devices['Desktop Chrome'], hasTouch: true, isMobile: true, deviceScaleFactor: 3 }
 
 export default defineConfig({
   testDir: './e2e',
@@ -44,10 +45,12 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 800 } }, testIgnore: /ipad/ },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 800 } }, testIgnore: /ipad|phone/ },
     // iPad (10th gen) CSS viewport, touch enabled. Chromium engine: see docs/testing.md for WebKit.
     { name: 'ipad-landscape', use: { ...tablet, viewport: { width: 1180, height: 820 } }, testMatch: /ipad|journey|shots/ },
     { name: 'ipad-portrait', use: { ...tablet, viewport: { width: 820, height: 1180 } }, testMatch: /ipad|journey|shots/ },
+    // iPhone held upright (CSS viewport of a 6.1" iPhone), touch enabled.
+    { name: 'iphone-portrait', use: { ...phone, viewport: { width: 390, height: 844 } }, testMatch: /phone/ },
   ],
   webServer: [
     {
