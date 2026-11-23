@@ -96,6 +96,27 @@ A table is made once and saved under **Tables** on the home screen. In any progr
 Mat step copies it in – so a child can move things around without ever changing the saved table. The
 pictures here use a made-up mat; SPIKE Lab does not come with any real competition mat.
 
+## Practice pieces, a hook and a checklist
+
+![The mat editor with a push bar selected: its front edge is marked and it can be set to "push 5 cm"](screenshots/kit-editor.png)
+
+Real mission models ask the robot to *do* something. Four simple stand-ins cover the usual kinds:
+
+- a **push bar** that slides along its rail, but only when it is pushed from its front;
+- a **press plate** that counts when the robot touches its front face;
+- a **pull ring** that a hook catches and drags;
+- a **block** with a rough height (low, medium, tall) that can be marked "do not touch".
+
+Each piece is its own task. How far a bar must be pushed or a ring pulled can be changed, and a piece can
+be switched to "just an obstacle". The yellow edge shows a piece's front.
+
+![The 3D view after a run: the ring is on the robot's hook and the checklist says 2 of 4 done](screenshots/kit-3d.png)
+
+In the Robot step there is a **Hook** (a thin arm; set its length to match yours), and "My own tool" is a
+ram of any width and length. During a run the checklist ticks each task at the moment it is achieved, and
+stepping back un-ticks it. "Mission complete!" needs every task done. The pieces are deliberately simple:
+they train getting to the right place with the right tool, not how a real model moves.
+
 ## On an iPad
 
 <img src="screenshots/ipad-portrait.png" alt="The simulator in iPad portrait layout" width="420">

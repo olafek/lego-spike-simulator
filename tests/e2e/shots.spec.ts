@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
-import { amountInput, dragCorner, login, openSample, playToEnd, TABLE_CORNERS, TABLE_PHOTO } from './helpers'
+import { amountInput, dragCorner, editProject, login, openSample, playToEnd, TABLE_CORNERS, TABLE_PHOTO } from './helpers'
 
 // Visual record of every main screen (tests/test-results/shots). Not an assertion-heavy test:
 // it exists so a human can look at the real pages after a run.
@@ -79,4 +79,33 @@ test('capture the main screens', async ({ page }, info) => {
   await page.getByTestId('camera-orbit').click()
   await page.waitForTimeout(1000)
   await shot('15-table-3d')
+
+  // the practice kit: stand-ins on the mat, a hook on the robot, and the checklist
+  await page.goto('/')
+  await openSample(page, 'drive-30')
+  await editProject(page, (data) => {
+    data.scene.objects = [
+      { id: 'ring', type: 'pull_ring', x: 0, y: 300, rot: 0 },
+      { id: 'bar', type: 'push_bar', x: 300, y: 300, rot: 20 },
+      { id: 'plate', type: 'press_plate', x: -300, y: 300, rot: -30 },
+      { id: 'block', type: 'obstacle', x: -250, y: 60, rot: 0, task: true, h: 160 },
+    ]
+    data.attachments = [{ uid: 'tool', kind: 'hook', port: null }]
+    data.step = 'mission'
+    const blocks = data.program.stacks[0].blocks
+    const move = blocks.find((b: any) => b.op === 'move_for')
+    data.program.stacks[0].blocks = [
+      ...blocks.filter((b: any) => b.op !== 'move_for'),
+      { ...move, id: 'kit_a', params: { ...move.params, amount: 12 } },
+      { ...move, id: 'kit_b', params: { ...move.params, direction: 'backward', amount: 15 } },
+    ]
+  })
+  await expect(page.getByTestId('mission-editor')).toBeVisible()
+  await page.getByTestId('obj-push_bar').click()
+  await shot('16-kit-editor')
+  await page.getByTestId('mission-done').click()
+  await page.getByTestId('camera-orbit').click()
+  await playToEnd(page)
+  await page.waitForTimeout(600)
+  await shot('17-kit-3d')
 })

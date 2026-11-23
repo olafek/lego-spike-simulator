@@ -67,6 +67,8 @@ More screens, including the 3D views and the iPad and iPhone layouts: **[the vis
   distance and force sensors.
 - **Five cameras.** From above, free 3D, follow, behind and side.
 - **Missions.** A goal such as "get the big seed pod onto the circle" is checked from the simulated result.
+- **Practice pieces.** A push bar, a press plate, a pull ring and "do not touch" blocks stand in for what
+  mission models ask for. Put a hook or a ram on the robot, and a checklist ticks what the run really did.
 - **Your own table.** Practising for a competition? Photograph the real table once. SPIKE Lab straightens
   the photo into a true-size floor (about 236 × 114 cm, with a wall), you put blocks where the models stand,
   and every program can then be run on that table.
@@ -82,6 +84,9 @@ More screens, including the 3D views and the iPad and iPhone layouts: **[the vis
 - **Approximations are labelled.** Ports, wheel size and motor speeds come from official LEGO documents where
   they exist; everything else (track width, tool sizes, how objects slide) is an estimate, marked "≈" in the app
   and listed in [docs/robots.md](docs/robots.md). Pushing and lifting are simplified: things slide but do not tip.
+- **Practice pieces are stand-ins, not models.** A push bar slides but does not swing like a lever; a hook
+  catches a ring at a touch and cannot let go. They train the approach – the right spot, the right side,
+  the right tool – not the mechanism. Each one is marked "≈".
 - **A table picture is only a picture.** Places on it are as exact as the photo and the four corners you
   mark, so it is labelled "≈". No competition mat ships with SPIKE Lab: the picture is your own upload, and
   only the straightened mat is stored – never the original photo, which may show people.
@@ -92,8 +97,8 @@ More screens, including the 3D views and the iPad and iPhone layouts: **[the vis
 ## Under the hood
 
 Vue 3 + TypeScript + Three.js in the browser, Laravel on the server, SQLite or MySQL.
-The simulator itself is plain TypeScript with no framework, covered by 87 unit tests; 96 server tests and
-66 browser tests (desktop, iPad landscape, iPad portrait, iPhone portrait) cover the rest.
+The simulator itself is plain TypeScript with no framework, covered by 119 unit tests; 96 server tests and
+76 browser tests (desktop, iPad landscape, iPad portrait, iPhone portrait) cover the rest.
 
 **Why Laravel?** I have worked with it since version 5 and I like it. It is also a very good fit for
 AI-assisted coding: the framework is opinionated, so there is one obvious place for everything and far less

@@ -103,6 +103,26 @@ copies a table's picture onto a program and returns the table's document; the fr
 The copy is independent, so a program can never change a saved table. A picture belongs to the mat kind it
 was straightened for: the mat kind is locked while a picture is on it.
 
+## Practice kit
+
+`core/scene.ts` describes three stand-ins (`push_bar`, `press_plate`, `pull_ring`, marked `kit` in
+`OBJECT_DEFS`) and lets a block carry a height and a "do not touch" mark; `hasTask()` says whether a
+piece asks something of the robot. `core/robots.ts` adds a passive `hook` tool.
+
+The behaviour is in the same fixed-step loop as everything else (`simulate.ts`):
+
+- a push bar is a movable whose push is projected onto its rail and clamped to its travel; pushed from
+  any other side it does not move, so the robot jams against it;
+- before anything is pushed, a hook whose tip area reaches a free ring catches it; the ring then follows
+  the hook and counts as part of the robot for the "jammed against something fixed" check;
+- after the robot has moved, thin probes detect a touch on a plate's front face or on a marked block.
+
+The checklist is `SimResult.tasks` (one row per piece with a task, then the goal) plus
+`SimResult.taskChanges`, a list of "task N became met at frame F". It is kept beside the frames, so the
+frames of a project without kit pieces are exactly what they were, and `tasksAt(result, frame)` in
+`timeline.ts` gives the list at any moment (which is how stepping back un-ticks). Push, press and pull
+stay ticked once earned; the goal row follows the current positions.
+
 ## The public demo
 
 `/demo` (pages) and `/demo/api/*` (data) are the same app behind a different door, enabled by `LAB_DEMO_ENABLED`.

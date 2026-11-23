@@ -35,3 +35,19 @@ All values live in `frontend/src/core/robots.ts` as data and can be overridden p
 Measure the wheel diameter and the distance between the wheel centres, enter them under
 Robot → Ports and calibration, and (Settings) choose "Like a new hub" if the program does not set
 "1 motor rotation". Wheel slip can be dialled in; any slip above 0 marks all distances as estimates.
+
+## Practice kit and tables (all approximate)
+
+None of these is a LEGO part or a copy of a mission model. They are generic stand-ins.
+
+| Thing | What SPIKE Lab does | What it does not model |
+|---|---|---|
+| Competition table | A walled mat of 236.2 × 114.3 cm, the common competition mat size. The wall sits at the mat's edge. | The gap between mat and wall, the wall's real height. |
+| Table picture | A photo straightened from four marked corners, drawn at the mat's size. | Lens distortion; anything standing on the mat appears flat and leaning. Places are only as exact as the photo and the corners. |
+| Push bar | A 12 × 2.4 cm bar that slides up to 8 cm along its rail, only when pushed from its front. Task: pushed at least 5 cm (2–8 cm). | Levers, hinges, anything that swings, tips or springs back. |
+| Press plate | A fixed 8 × 4 cm block. Task: any part of the robot or its tool touches the front face. | How hard it is pressed; buttons that need a certain height. |
+| Pull ring | A ring 3.6 cm across. A hook catches it as soon as the hook's tip reaches it; it then follows the hook. Task: pulled at least 10 cm (5–30 cm) while on the hook. | A hook missing or slipping; letting the ring go; the ring's height. |
+| Block height | Low 4 cm, medium 8 cm, tall 16 cm. | Height is for looks only: every block stops the robot the same way. |
+| "Do not touch" | Ticked until the robot's body or tool first comes within 2 mm of the block. | Wobble or knocking over. |
+| Hook | A fixed arm 1.6 cm wide and 11 cm long (both adjustable) with a small barb at the tip. | A motorised hook, a hook on the side or the back, two tools at once. |
+| Ram | "My own tool": a plain block of any width and length that pushes. | Its real shape and weight. |
